@@ -1,0 +1,428 @@
+# Copyright (C) 2024 Betatech
+# This file is distributed under the GPL-2.0+.
+msgid ""
+msgstr ""
+"Project-Id-Version: Mix & Match Bundle for WooCommerce 1.0.0\n"
+"Report-Msgid-Bugs-To: https://betatech.co/support\n"
+"POT-Creation-Date: 2024-01-01 00:00:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2024-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"X-Generator: Mix & Match Bundle Translation Generator\n"
+
+#: mix-match-bundle.php:46
+msgid "Mix & Match Bundle for WooCommerce"
+msgstr ""
+
+#: mix-match-bundle.php:47
+msgid "requires WooCommerce to be installed and active."
+msgstr ""
+
+#: mix-match-bundle.php:49
+msgid "Install WooCommerce"
+msgstr ""
+
+#: mix-match-bundle.php:98
+msgid "Settings"
+msgstr ""
+
+#: mix-match-bundle.php:87
+msgid "Mix & Match Bundles"
+msgstr ""
+
+#: mix-match-bundle.php:88
+msgid "Mix & Match"
+msgstr ""
+
+#: admin/bundle-editor.php:7
+msgid "Bundle Editor"
+msgstr ""
+
+#: admin/bundle-editor.php:14
+msgid "Bundle Name"
+msgstr ""
+
+#: admin/bundle-editor.php:16
+msgid "Enter bundle name"
+msgstr ""
+
+#: admin/bundle-editor.php:20
+msgid "Description"
+msgstr ""
+
+#: admin/bundle-editor.php:22
+msgid "Optional bundle description"
+msgstr ""
+
+#: admin/bundle-editor.php:26
+msgid "Bundle Mode"
+msgstr ""
+
+#: admin/bundle-editor.php:29
+msgid "Selection Mode"
+msgstr ""
+
+#: admin/bundle-editor.php:30
+msgid "Customers select items with checkboxes"
+msgstr ""
+
+#: admin/bundle-editor.php:33
+msgid "Quantity Mode"
+msgstr ""
+
+#: admin/bundle-editor.php:34
+msgid "Customers choose quantities for each product"
+msgstr ""
+
+#: admin/bundle-editor.php:39
+msgid "Bundle Status"
+msgstr ""
+
+#: admin/bundle-editor.php:42
+msgid "Enable this bundle"
+msgstr ""
+
+#: admin/bundle-editor.php:43
+msgid "Active"
+msgstr ""
+
+#: admin/bundle-editor.php:49
+msgid "Select Products"
+msgstr ""
+
+#: admin/bundle-editor.php:50
+msgid "Choose which products will be available in this bundle"
+msgstr ""
+
+#: admin/bundle-editor.php:53
+msgid "Search products..."
+msgstr ""
+
+#: admin/bundle-editor.php:60
+msgid "Discount Tiers"
+msgstr ""
+
+#: admin/bundle-editor.php:61
+msgid "Set quantity-based discounts (higher quantities = bigger discounts)"
+msgstr ""
+
+#: admin/bundle-editor.php:69
+msgid "Add Tier"
+msgstr ""
+
+#: admin/bundle-editor.php:78
+msgid "Design Customization"
+msgstr ""
+
+#: admin/bundle-editor.php:82
+msgid "Primary Color"
+msgstr ""
+
+#: admin/bundle-editor.php:84
+msgid "Main brand color (buttons, prices, checkmarks)"
+msgstr ""
+
+#: admin/bundle-editor.php:88
+msgid "Button Text Color"
+msgstr ""
+
+#: admin/bundle-editor.php:90
+msgid "Text color for buttons"
+msgstr ""
+
+#: admin/bundle-editor.php:94
+msgid "Accent Color"
+msgstr ""
+
+#: admin/bundle-editor.php:96
+msgid "Secondary accent color"
+msgstr ""
+
+#: admin/bundle-editor.php:100
+msgid "Hover Background Color"
+msgstr ""
+
+#: admin/bundle-editor.php:102
+msgid "Button color on hover"
+msgstr ""
+
+#: admin/bundle-editor.php:106
+msgid "Hover Accent Color"
+msgstr ""
+
+#: admin/bundle-editor.php:108
+msgid "Accent color on hover"
+msgstr ""
+
+#: admin/bundle-editor.php:113
+msgid "Add to Cart Button Text"
+msgstr ""
+
+#: admin/bundle-editor.php:114
+msgid "Add Bundle to Cart"
+msgstr ""
+
+#: admin/bundle-editor.php:115
+msgid "Customize the add to cart button text"
+msgstr ""
+
+#: admin/bundle-editor.php:119
+msgid "Progress Bar Title"
+msgstr ""
+
+#: admin/bundle-editor.php:120
+msgid "Your Savings Progress"
+msgstr ""
+
+#: admin/bundle-editor.php:121
+msgid "Title shown above the discount progress bar"
+msgstr ""
+
+#: admin/bundle-editor.php:125
+msgid "Add to Cart Behavior"
+msgstr ""
+
+#: admin/bundle-editor.php:128
+msgid "Open Sidecart (Recommended)"
+msgstr ""
+
+#: admin/bundle-editor.php:129
+msgid "Redirect to Cart Page"
+msgstr ""
+
+#: admin/bundle-editor.php:131
+msgid "Choose whether to open a sidecart or redirect to cart page when bundle is added"
+msgstr ""
+
+#: admin/bundle-editor.php:138
+msgid "Visibility Options"
+msgstr ""
+
+#: admin/bundle-editor.php:139
+msgid "Control which elements are displayed on the frontend"
+msgstr ""
+
+#: admin/bundle-editor.php:143
+msgid "Show Bundle Title"
+msgstr ""
+
+#: admin/bundle-editor.php:147
+msgid "Show Bundle Description"
+msgstr ""
+
+#: admin/bundle-editor.php:151
+msgid "Show Heading Text"
+msgstr ""
+
+#: admin/bundle-editor.php:155
+msgid "Show Hint Text"
+msgstr ""
+
+#: admin/bundle-editor.php:159
+msgid "Show Progress Text"
+msgstr ""
+
+#: admin/bundle-editor.php:166
+msgid "Frontend Text Customization"
+msgstr ""
+
+#: admin/bundle-editor.php:167
+msgid "Customize the text displayed to customers"
+msgstr ""
+
+#: admin/bundle-editor.php:170
+msgid "Heading Text"
+msgstr ""
+
+#: admin/bundle-editor.php:172
+msgid "Select Your Products Below"
+msgstr ""
+
+#: admin/bundle-editor.php:173
+msgid "Main heading shown above products"
+msgstr ""
+
+#: admin/bundle-editor.php:177
+msgid "Hint Text"
+msgstr ""
+
+#: admin/bundle-editor.php:179
+msgid "Bundle 2, 3, 4 or 5 items and watch the savings grow."
+msgstr ""
+
+#: admin/bundle-editor.php:180
+msgid "Helpful text shown below the heading"
+msgstr ""
+
+#: admin/bundle-editor.php:188
+msgid "Save Bundle"
+msgstr ""
+
+#: admin/bundle-editor.php:189
+msgid "Cancel"
+msgstr ""
+
+#: includes/class-cart.php:74
+#, php-format
+msgid "Bundle Discount (%s%% off)"
+msgstr ""
+
+#: includes/class-frontend.php:40
+msgid "Invalid bundle"
+msgstr ""
+
+#: includes/class-shortcode.php:23
+msgid "Bundle not found"
+msgstr ""
+
+#: templates/bundle-display.php:35
+msgid "Select"
+msgstr ""
+
+#: templates/bundle-display.php:50
+msgid "Quantity"
+msgstr ""
+
+#: templates/bundle-display.php:82
+msgid "My Bundle"
+msgstr ""
+
+#: templates/bundle-display.php:91
+msgid "No products selected yet"
+msgstr ""
+
+#: templates/bundle-display.php:103
+msgid "Subtotal"
+msgstr ""
+
+#: templates/bundle-display.php:109
+msgid "Discount"
+msgstr ""
+
+#: templates/bundle-display.php:115
+msgid "Total"
+msgstr ""
+
+#: assets/js/frontend.js:280
+msgid "Please select at least one product"
+msgstr ""
+
+#: assets/js/frontend.js:289
+msgid "Please select a variation for all variable products"
+msgstr ""
+
+#: assets/js/frontend.js:325
+msgid "Bundle added to cart successfully!"
+msgstr ""
+
+#: assets/js/frontend.js:330
+msgid "Error adding bundle to cart"
+msgstr ""
+
+#: assets/js/frontend.js:519
+msgid "Invalid data"
+msgstr ""
+
+#: assets/js/admin.js:525
+msgid "Bundle saved successfully!"
+msgstr ""
+
+#: assets/js/admin.js:532
+msgid "Error saving bundle"
+msgstr ""
+
+#: assets/js/admin.js:580
+msgid "Are you sure you want to delete this bundle?"
+msgstr ""
+
+#: assets/js/admin.js:591
+msgid "Bundle deleted successfully!"
+msgstr ""
+
+#: assets/js/admin.js:598
+msgid "Error deleting bundle"
+msgstr ""
+
+#: assets/js/admin.js:625
+msgid "Shortcode copied to clipboard!"
+msgstr ""
+
+#: assets/js/admin.js:628
+msgid "Failed to copy shortcode"
+msgstr ""
+
+#: readme.txt:3
+msgid "Create customizable product bundles with tiered quantity discounts for WooCommerce"
+msgstr ""
+
+#: readme.txt:45
+msgid "Bundle Creation"
+msgstr ""
+
+#: readme.txt:46
+msgid "Create unlimited product bundles with custom names and descriptions"
+msgstr ""
+
+#: readme.txt:48
+msgid "Tiered Discounts"
+msgstr ""
+
+#: readme.txt:49
+msgid "Set quantity-based discount tiers (e.g., buy 3 get 10% off, buy 5 get 20% off)"
+msgstr ""
+
+#: readme.txt:51
+msgid "Two Bundle Modes"
+msgstr ""
+
+#: readme.txt:52
+msgid "Selection Mode: Customers choose products with checkboxes"
+msgstr ""
+
+#: readme.txt:53
+msgid "Quantity Mode: Customers set quantities for each product"
+msgstr ""
+
+#: readme.txt:55
+msgid "Full Customization"
+msgstr ""
+
+#: readme.txt:56
+msgid "Customize colors, button text, and displayed elements"
+msgstr ""
+
+#: readme.txt:58
+msgid "Mobile Optimized"
+msgstr ""
+
+#: readme.txt:59
+msgid "Includes sticky mobile cart for better mobile shopping experience"
+msgstr ""
+
+#: readme.txt:61
+msgid "Sidecart Integration"
+msgstr ""
+
+#: readme.txt:62
+msgid "Seamlessly integrates with popular sidecart plugins"
+msgstr ""
+
+#: readme.txt:64
+msgid "HPOS Compatible"
+msgstr ""
+
+#: readme.txt:65
+msgid "Fully compatible with WooCommerce High-Performance Order Storage"
+msgstr ""
+
+#: readme.txt:67
+msgid "Translation Ready"
+msgstr ""
+
+#: readme.txt:68
+msgid "All strings are translatable with included POT file"
+msgstr ""
+

@@ -1,0 +1,707 @@
+/**
+ * Mix & Match Bundle - Admin Styles
+ * Professional CSS with Variables and Modern Standards
+ * 
+ * @version 2.0
+ * @package MixMatchBundle
+ */
+
+/* =====================================================
+   CSS CUSTOM PROPERTIES (VARIABLES)
+   ===================================================== */
+
+:root {
+    /* WordPress Colors */
+    --mmb-admin-primary: #2271b1;
+    --mmb-admin-primary-hover: #135e96;
+    --mmb-admin-primary-light: #e5f5fa;
+    
+    /* Status Colors */
+    --mmb-status-enabled-bg: #c6e1c6;
+    --mmb-status-enabled-text: #2d5016;
+    --mmb-status-disabled-bg: #f0f0f0;
+    --mmb-status-disabled-text: #666;
+    
+    /* Text Colors */
+    --mmb-admin-text-primary: #333;
+    --mmb-admin-text-secondary: #666;
+    --mmb-admin-text-muted: #999;
+    
+    /* Background Colors */
+    --mmb-admin-bg-white: #ffffff;
+    --mmb-admin-bg-light: #f5f5f5;
+    --mmb-admin-bg-lighter: #f9f9f9;
+    --mmb-admin-bg-gray: #fafafa;
+    
+    /* Border Colors */
+    --mmb-admin-border-light: #eee;
+    --mmb-admin-border-normal: #ddd;
+    --mmb-admin-border-medium: #ccc;
+    --mmb-admin-border-gray: #e0e0e0;
+    
+    /* Spacing */
+    --mmb-admin-spacing-xs: 4px;
+    --mmb-admin-spacing-sm: 5px;
+    --mmb-admin-spacing-md: 8px;
+    --mmb-admin-spacing-lg: 10px;
+    --mmb-admin-spacing-xl: 12px;
+    --mmb-admin-spacing-2xl: 20px;
+    
+    /* Border Radius */
+    --mmb-admin-radius-sm: 3px;
+    --mmb-admin-radius-md: 4px;
+    --mmb-admin-radius-lg: 6px;
+    --mmb-admin-radius-xl: 8px;
+    
+    /* Typography */
+    --mmb-admin-font-xs: 11px;
+    --mmb-admin-font-sm: 12px;
+    --mmb-admin-font-base: 14px;
+    --mmb-admin-font-lg: 16px;
+    
+    --mmb-admin-font-normal: 400;
+    --mmb-admin-font-medium: 500;
+    --mmb-admin-font-semibold: 600;
+    --mmb-admin-font-bold: 700;
+    
+    /* Transitions */
+    --mmb-admin-transition-fast: 0.15s ease;
+    --mmb-admin-transition-base: 0.2s ease;
+    
+    /* Shadows */
+    --mmb-admin-shadow-sm: 0 1px 1px rgba(0, 0, 0, 0.04);
+    --mmb-admin-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --mmb-admin-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* =====================================================
+   WORDPRESS MENU ICON
+   ===================================================== */
+
+#adminmenu #toplevel_page_mix-match-bundles .wp-menu-image img {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 6px 0 !important;
+    opacity: 0.6;
+    transition: opacity var(--mmb-admin-transition-base);
+}
+
+#adminmenu #toplevel_page_mix-match-bundles:hover .wp-menu-image img,
+#adminmenu #toplevel_page_mix-match-bundles.wp-has-current-submenu .wp-menu-image img,
+#adminmenu #toplevel_page_mix-match-bundles.current .wp-menu-image img {
+    opacity: 1;
+}
+
+/* =====================================================
+   ADMIN LAYOUT - Main Container
+   ===================================================== */
+
+.mmb-admin-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--mmb-admin-spacing-2xl);
+    max-width: 1400px;
+    margin-top: var(--mmb-admin-spacing-2xl);
+}
+
+.mmb-bundles-list,
+.mmb-bundle-editor {
+    background: var(--mmb-admin-bg-white);
+    border: 1px solid var(--mmb-admin-border-medium);
+    border-radius: var(--mmb-admin-radius-md);
+    padding: var(--mmb-admin-spacing-2xl);
+    box-shadow: var(--mmb-admin-shadow-sm);
+}
+
+.mmb-bundles-list h2,
+.mmb-bundle-editor h2 {
+    margin-top: 0;
+    margin-bottom: var(--mmb-admin-spacing-2xl);
+    font-size: var(--mmb-admin-font-lg);
+    font-weight: var(--mmb-admin-font-semibold);
+    color: var(--mmb-admin-text-primary);
+}
+
+/* =====================================================
+   BUNDLE TABLE
+   ===================================================== */
+
+.mmb-bundles-table-header {
+    display: grid;
+    grid-template-columns: 1.5fr 0.8fr 0.6fr 0.7fr 2fr 1.3fr;
+    gap: var(--mmb-admin-spacing-lg);
+    padding: var(--mmb-admin-spacing-lg);
+    background: var(--mmb-admin-bg-light);
+    font-weight: var(--mmb-admin-font-semibold);
+    border-radius: var(--mmb-admin-radius-md);
+    margin-bottom: var(--mmb-admin-spacing-lg);
+    font-size: var(--mmb-admin-font-sm);
+    color: var(--mmb-admin-text-primary);
+}
+
+.mmb-bundle-row {
+    display: grid;
+    grid-template-columns: 1.5fr 0.8fr 0.6fr 0.7fr 2fr 1.3fr;
+    gap: var(--mmb-admin-spacing-lg);
+    padding: var(--mmb-admin-spacing-lg);
+    border-bottom: 1px solid var(--mmb-admin-border-light);
+    align-items: center;
+    transition: background-color var(--mmb-admin-transition-fast);
+}
+
+.mmb-bundle-row:hover {
+    background: var(--mmb-admin-bg-gray);
+}
+
+.mmb-bundle-row:last-child {
+    border-bottom: none;
+}
+
+.mmb-bundle-col {
+    padding: var(--mmb-admin-spacing-sm) 0;
+    font-size: var(--mmb-admin-font-base);
+    color: var(--mmb-admin-text-primary);
+}
+
+/* =====================================================
+   BUNDLE STATUS BADGES
+   ===================================================== */
+
+.mmb-bundle-status {
+    padding: var(--mmb-admin-spacing-xs) var(--mmb-admin-spacing-md);
+    border-radius: var(--mmb-admin-radius-sm);
+    font-size: var(--mmb-admin-font-sm);
+    font-weight: var(--mmb-admin-font-semibold);
+    text-align: center;
+    display: inline-block;
+    line-height: 1.2;
+}
+
+.mmb-bundle-status.enabled {
+    background: var(--mmb-status-enabled-bg);
+    color: var(--mmb-status-enabled-text);
+}
+
+.mmb-bundle-status.disabled {
+    background: var(--mmb-status-disabled-bg);
+    color: var(--mmb-status-disabled-text);
+}
+
+/* =====================================================
+   BUNDLE ACTIONS
+   ===================================================== */
+
+.mmb-bundle-actions {
+    display: flex;
+    gap: var(--mmb-admin-spacing-sm);
+    flex-wrap: wrap;
+}
+
+.mmb-bundle-actions .button {
+    padding: var(--mmb-admin-spacing-xs) var(--mmb-admin-spacing-md);
+    font-size: var(--mmb-admin-font-sm);
+    line-height: 1.4;
+    min-height: auto;
+}
+
+/* =====================================================
+   SHORTCODE DISPLAY
+   ===================================================== */
+
+.mmb-shortcode-col {
+    display: flex;
+    align-items: center;
+    gap: var(--mmb-admin-spacing-sm);
+    min-width: 0;
+}
+
+.mmb-shortcode-input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px var(--mmb-admin-spacing-md) !important;
+    font-size: var(--mmb-admin-font-xs) !important;
+    font-family: 'Courier New', Courier, monospace;
+    background: var(--mmb-admin-bg-light);
+    border: 1px solid var(--mmb-admin-border-normal) !important;
+    border-radius: var(--mmb-admin-radius-sm);
+    width: 100% !important;
+    box-sizing: border-box;
+    cursor: pointer;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: all var(--mmb-admin-transition-fast);
+}
+
+.mmb-shortcode-input:hover,
+.mmb-shortcode-input:focus {
+    background: var(--mmb-admin-bg-white);
+    overflow: auto;
+    text-overflow: clip;
+    border-color: var(--mmb-admin-primary) !important;
+}
+
+.mmb-copy-shortcode {
+    padding: var(--mmb-admin-spacing-xs) var(--mmb-admin-spacing-md) !important;
+    font-size: var(--mmb-admin-font-base);
+    background: var(--mmb-admin-bg-light);
+    border: 1px solid var(--mmb-admin-border-medium) !important;
+    border-radius: var(--mmb-admin-radius-sm);
+    cursor: pointer;
+    transition: all var(--mmb-admin-transition-fast);
+    line-height: 1;
+    min-height: auto;
+}
+
+.mmb-copy-shortcode:hover {
+    background: var(--mmb-admin-border-gray);
+    border-color: var(--mmb-admin-border-normal) !important;
+}
+
+.mmb-copy-shortcode:active {
+    transform: scale(0.95);
+}
+
+/* =====================================================
+   EMPTY STATES
+   ===================================================== */
+
+.mmb-no-bundles {
+    padding: var(--mmb-admin-spacing-2xl);
+    text-align: center;
+    color: var(--mmb-admin-text-secondary);
+    font-size: var(--mmb-admin-font-base);
+    font-style: italic;
+}
+
+/* =====================================================
+   FORM STYLES - General
+   ===================================================== */
+
+.mmb-form-group {
+    margin-bottom: var(--mmb-admin-spacing-2xl);
+}
+
+.mmb-form-group label {
+    display: block;
+    margin-bottom: var(--mmb-admin-spacing-md);
+    font-weight: var(--mmb-admin-font-semibold);
+    color: var(--mmb-admin-text-primary);
+    font-size: var(--mmb-admin-font-base);
+}
+
+.mmb-form-group input[type="text"],
+.mmb-form-group input[type="number"],
+.mmb-form-group textarea,
+.mmb-form-group select {
+    width: 100%;
+    padding: var(--mmb-admin-spacing-md) var(--mmb-admin-spacing-xl);
+    border: 1px solid var(--mmb-admin-border-normal);
+    border-radius: var(--mmb-admin-radius-md);
+    font-size: var(--mmb-admin-font-base);
+    color: var(--mmb-admin-text-primary);
+    background: var(--mmb-admin-bg-white);
+    transition: all var(--mmb-admin-transition-fast);
+    box-sizing: border-box;
+}
+
+.mmb-form-group input[type="text"]:focus,
+.mmb-form-group input[type="number"]:focus,
+.mmb-form-group textarea:focus,
+.mmb-form-group select:focus {
+    border-color: var(--mmb-admin-primary);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--mmb-admin-primary);
+}
+
+.mmb-form-group textarea {
+    resize: vertical;
+    font-family: inherit;
+    min-height: 80px;
+}
+
+.mmb-form-group input[type="checkbox"] {
+    margin-right: var(--mmb-admin-spacing-md);
+    accent-color: var(--mmb-admin-primary);
+}
+
+.mmb-form-group small {
+    display: block;
+    margin-top: var(--mmb-admin-spacing-sm);
+    color: var(--mmb-admin-text-secondary);
+    font-size: var(--mmb-admin-font-sm);
+    font-style: italic;
+    line-height: 1.4;
+}
+
+/* =====================================================
+   FORM SECTIONS
+   ===================================================== */
+
+.mmb-form-section {
+    margin: var(--mmb-admin-spacing-2xl) 0;
+    padding: var(--mmb-admin-spacing-2xl);
+    background: var(--mmb-admin-bg-lighter);
+    border: 1px solid var(--mmb-admin-border-gray);
+    border-radius: var(--mmb-admin-radius-lg);
+}
+
+.mmb-form-section h3 {
+    margin: 0 0 var(--mmb-admin-spacing-2xl) 0;
+    font-size: var(--mmb-admin-font-lg);
+    font-weight: var(--mmb-admin-font-semibold);
+    color: var(--mmb-admin-text-primary);
+    padding-bottom: var(--mmb-admin-spacing-lg);
+    border-bottom: 2px solid var(--mmb-admin-border-normal);
+}
+
+/* =====================================================
+   PRODUCT SELECTOR
+   ===================================================== */
+
+#mmb-product-search {
+    width: 100%;
+    padding: var(--mmb-admin-spacing-md) var(--mmb-admin-spacing-xl);
+    margin-bottom: var(--mmb-admin-spacing-lg);
+    border: 1px solid var(--mmb-admin-border-normal);
+    border-radius: var(--mmb-admin-radius-md);
+    font-size: var(--mmb-admin-font-base);
+    transition: all var(--mmb-admin-transition-fast);
+}
+
+#mmb-product-search:focus {
+    border-color: var(--mmb-admin-primary);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--mmb-admin-primary);
+}
+
+.mmb-products-list {
+    border: 1px solid var(--mmb-admin-border-normal);
+    border-radius: var(--mmb-admin-radius-md);
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--mmb-admin-bg-gray);
+}
+
+/* Custom scrollbar for products list */
+.mmb-products-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.mmb-products-list::-webkit-scrollbar-track {
+    background: var(--mmb-admin-bg-light);
+}
+
+.mmb-products-list::-webkit-scrollbar-thumb {
+    background: var(--mmb-admin-border-medium);
+    border-radius: 4px;
+}
+
+.mmb-products-list::-webkit-scrollbar-thumb:hover {
+    background: var(--mmb-admin-text-secondary);
+}
+
+.mmb-product-option {
+    display: flex;
+    align-items: center;
+    padding: var(--mmb-admin-spacing-lg) var(--mmb-admin-spacing-xl);
+    border-bottom: 1px solid var(--mmb-admin-border-light);
+    cursor: pointer;
+    gap: var(--mmb-admin-spacing-md);
+    transition: background-color var(--mmb-admin-transition-fast);
+}
+
+.mmb-product-option:last-child {
+    border-bottom: none;
+}
+
+.mmb-product-option:hover {
+    background: var(--mmb-admin-bg-light);
+}
+
+.mmb-product-option input[type="checkbox"]:checked + span {
+    font-weight: var(--mmb-admin-font-semibold);
+    color: var(--mmb-admin-primary);
+}
+
+.mmb-product-option input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--mmb-admin-primary);
+}
+
+.mmb-product-option span:nth-child(2) {
+    flex: 1;
+    font-size: var(--mmb-admin-font-base);
+}
+
+.mmb-product-price {
+    color: var(--mmb-admin-text-muted);
+    font-size: var(--mmb-admin-font-sm);
+    font-weight: var(--mmb-admin-font-medium);
+}
+
+/* =====================================================
+   DISCOUNT TIERS
+   ===================================================== */
+
+#mmb-tiers-container {
+    background: var(--mmb-admin-bg-gray);
+    border: 1px solid var(--mmb-admin-border-normal);
+    border-radius: var(--mmb-admin-radius-md);
+    padding: var(--mmb-admin-spacing-lg);
+    margin-bottom: var(--mmb-admin-spacing-lg);
+}
+
+.mmb-tier-input {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: var(--mmb-admin-spacing-md);
+    margin-bottom: var(--mmb-admin-spacing-md);
+    align-items: center;
+}
+
+.mmb-tier-input:last-child {
+    margin-bottom: 0;
+}
+
+.mmb-tier-input input {
+    padding: 6px var(--mmb-admin-spacing-md);
+    font-size: var(--mmb-admin-font-sm);
+    border: 1px solid var(--mmb-admin-border-normal);
+    border-radius: var(--mmb-admin-radius-sm);
+    transition: all var(--mmb-admin-transition-fast);
+}
+
+.mmb-tier-input input:focus {
+    border-color: var(--mmb-admin-primary);
+    outline: none;
+    box-shadow: 0 0 0 1px var(--mmb-admin-primary);
+}
+
+.mmb-tier-input .mmb-remove-tier {
+    padding: var(--mmb-admin-spacing-xs) var(--mmb-admin-spacing-md);
+    font-size: var(--mmb-admin-font-sm);
+    background: var(--mmb-admin-bg-light);
+    border: 1px solid var(--mmb-admin-border-medium);
+    border-radius: var(--mmb-admin-radius-sm);
+    cursor: pointer;
+    transition: all var(--mmb-admin-transition-fast);
+    line-height: 1.4;
+}
+
+.mmb-tier-input .mmb-remove-tier:hover {
+    background: #fee;
+    border-color: #c00;
+    color: #c00;
+}
+
+#mmb-add-tier {
+    margin-top: var(--mmb-admin-spacing-lg);
+    margin-bottom: var(--mmb-admin-spacing-2xl);
+}
+
+/* =====================================================
+   COLOR PICKERS
+   ===================================================== */
+
+.mmb-color-picker-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--mmb-admin-spacing-2xl);
+    padding: var(--mmb-admin-spacing-2xl);
+    background: var(--mmb-admin-bg-lighter);
+    border-radius: var(--mmb-admin-radius-xl);
+    margin-bottom: var(--mmb-admin-spacing-2xl);
+}
+
+.mmb-color-picker-group .mmb-form-group {
+    margin-bottom: 0;
+}
+
+.mmb-color-picker-group input[type="color"] {
+    width: 100%;
+    height: 50px;
+    padding: var(--mmb-admin-spacing-xs);
+    border-radius: var(--mmb-admin-radius-lg);
+    border: 2px solid var(--mmb-admin-border-normal);
+    cursor: pointer;
+    transition: all var(--mmb-admin-transition-base);
+}
+
+.mmb-color-picker-group input[type="color"]:hover {
+    border-color: var(--mmb-admin-primary);
+    transform: scale(1.02);
+    box-shadow: var(--mmb-admin-shadow-md);
+}
+
+.mmb-color-picker-group input[type="color"]:focus {
+    outline: none;
+    border-color: var(--mmb-admin-primary);
+    box-shadow: 0 0 0 3px var(--mmb-admin-primary-light);
+}
+
+/* =====================================================
+   VISIBILITY OPTIONS
+   ===================================================== */
+
+.mmb-visibility-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mmb-admin-spacing-xl);
+    margin-bottom: var(--mmb-admin-spacing-lg);
+}
+
+.mmb-checkbox-label {
+    display: flex;
+    align-items: center;
+    padding: var(--mmb-admin-spacing-lg);
+    background: var(--mmb-admin-bg-white);
+    border: 1px solid var(--mmb-admin-border-normal);
+    border-radius: var(--mmb-admin-radius-md);
+    cursor: pointer;
+    transition: all var(--mmb-admin-transition-base);
+}
+
+.mmb-checkbox-label:hover {
+    background: var(--mmb-admin-bg-light);
+    border-color: var(--mmb-admin-primary);
+    transform: translateX(2px);
+}
+
+.mmb-checkbox-label input[type="checkbox"] {
+    margin: 0 var(--mmb-admin-spacing-lg) 0 0;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+.mmb-checkbox-label span {
+    font-size: var(--mmb-admin-font-base);
+    font-weight: var(--mmb-admin-font-medium);
+    color: var(--mmb-admin-text-primary);
+}
+
+/* =====================================================
+   FORM ACTIONS
+   ===================================================== */
+
+.mmb-form-actions {
+    display: flex;
+    gap: var(--mmb-admin-spacing-lg);
+    padding-top: var(--mmb-admin-spacing-2xl);
+    border-top: 1px solid var(--mmb-admin-border-light);
+    margin-top: var(--mmb-admin-spacing-2xl);
+}
+
+.mmb-form-actions button {
+    padding: var(--mmb-admin-spacing-lg) var(--mmb-admin-spacing-2xl);
+    font-size: var(--mmb-admin-font-base);
+    font-weight: var(--mmb-admin-font-medium);
+    border-radius: var(--mmb-admin-radius-md);
+    transition: all var(--mmb-admin-transition-fast);
+}
+
+.mmb-form-actions button:active {
+    transform: scale(0.98);
+}
+
+/* =====================================================
+   RESPONSIVE DESIGN
+   ===================================================== */
+
+@media (max-width: 1200px) {
+    .mmb-admin-container {
+        gap: var(--mmb-admin-spacing-lg);
+    }
+}
+
+@media (max-width: 1024px) {
+    .mmb-admin-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .mmb-bundles-table-header,
+    .mmb-bundle-row {
+        grid-template-columns: 1fr;
+        gap: var(--mmb-admin-spacing-sm);
+    }
+    
+    .mmb-bundle-col {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .mmb-bundle-col::before {
+        content: attr(data-label);
+        font-weight: var(--mmb-admin-font-semibold);
+        color: var(--mmb-admin-text-secondary);
+        font-size: var(--mmb-admin-font-sm);
+    }
+}
+
+@media (max-width: 768px) {
+    .mmb-bundles-list,
+    .mmb-bundle-editor {
+        padding: var(--mmb-admin-spacing-lg);
+    }
+    
+    .mmb-color-picker-group {
+        grid-template-columns: 1fr;
+        padding: var(--mmb-admin-spacing-lg);
+    }
+    
+    .mmb-form-actions {
+        flex-direction: column;
+    }
+    
+    .mmb-form-actions button {
+        width: 100%;
+    }
+}
+
+/* =====================================================
+   UTILITY CLASSES
+   ===================================================== */
+
+/* Smooth focus transitions */
+*:focus {
+    transition: outline var(--mmb-admin-transition-fast);
+}
+
+/* Loading state */
+.mmb-loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.mmb-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--mmb-admin-primary);
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: mmb-spin 0.6s linear infinite;
+}
+
+@keyframes mmb-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Print styles */
+@media print {
+    .mmb-bundle-actions,
+    .mmb-form-actions,
+    .mmb-copy-shortcode {
+        display: none !important;
+    }
+}
