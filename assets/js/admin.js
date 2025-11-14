@@ -22,6 +22,14 @@
             this.bindEvents();
             this.loadBundles();
             this.initSweetAlert();
+            
+            // Load products on initial page load
+            this.searchProducts('');
+            
+            // Add default tier if none exist
+            if (this.elements.tiersContainer.querySelectorAll('.mmb-tier-input').length === 0) {
+                this.addTierInput(2, 10);
+            }
         },
         
         /**
@@ -396,7 +404,7 @@
                     nonce: mmb_admin.nonce
                 });
                 
-                if (response.success) {
+                    if (response.success) {
                     this.renderBundles(response.data);
                 }
             } catch (error) {
@@ -475,6 +483,15 @@
             console.log('Saving bundle with data:', formData);
             
             // Validation
+            if (!formData.name || formData.name.trim() === '') {
+                await this.showAlert({
+                    type: 'warning',
+                    title: 'Missing Bundle Name',
+                    text: 'Please enter a bundle name'
+                });
+                return;
+            }
+            
             if (formData.product_ids.length === 0) {
                 await this.showAlert({
                     type: 'warning',
@@ -497,7 +514,7 @@
                 const response = await this.ajax(formData);
                 console.log('Save response:', response);
                 
-                if (response.success) {
+                    if (response.success) {
                     await this.showAlert({
                         type: 'success',
                         title: 'Success!',
@@ -505,7 +522,7 @@
                     });
                     this.resetForm();
                     this.loadBundles();
-                } else {
+                    } else {
                     console.error('Save failed:', response);
                     await this.showAlert({
                         type: 'error',
@@ -552,7 +569,7 @@
                     bundle_id: bundleId
                 });
                 
-                if (response.success) {
+                    if (response.success) {
                     await this.showAlert({
                         type: 'success',
                         title: 'Deleted!',
@@ -590,12 +607,12 @@
                 
                 console.log('Full AJAX response:', response);
                 
-                if (response.success) {
+                    if (response.success) {
                     console.log('All bundles from server:', response.data);
-                    const bundle = response.data.find(b => b.id == bundleId);
+                        const bundle = response.data.find(b => b.id == bundleId);
                     console.log('Found bundle:', bundle);
                     
-                    if (bundle) {
+                        if (bundle) {
                         // Log specifically the discount_tiers
                         console.log('Bundle discount_tiers type:', typeof bundle.discount_tiers);
                         console.log('Bundle discount_tiers value:', bundle.discount_tiers);
@@ -684,18 +701,26 @@
          */
         async searchProducts(searchTerm) {
             try {
+                console.log('Searching products with term:', searchTerm);
                 const response = await this.ajax({
                     action: 'mmb_search_products',
                     nonce: mmb_admin.nonce,
                     search: searchTerm
                 });
                 
-                if (response.success) {
+                console.log('Search response:', response);
+                
+                    if (response.success) {
+                    console.log('Products found:', response.data.length);
                     this.allProducts = response.data;
                     this.renderProducts(response.data);
+                } else {
+                    console.error('Search failed:', response);
+                    this.renderProducts([]);
                 }
             } catch (error) {
                 console.error('Error searching products:', error);
+                this.renderProducts([]);
             }
         },
         
@@ -747,9 +772,9 @@
             const tierDiv = document.createElement('div');
             tierDiv.className = 'mmb-tier-input';
             tierDiv.innerHTML = `
-                <input type="number" name="discount_tiers[${index}][quantity]" placeholder="Quantity" min="1" value="${quantity}" required>
-                <input type="number" name="discount_tiers[${index}][discount]" placeholder="Discount %" min="0" max="100" value="${discount}" step="0.01" required>
-                <button type="button" class="mmb-remove-tier">Remove</button>
+                    <input type="number" name="discount_tiers[${index}][quantity]" placeholder="Quantity" min="1" value="${quantity}" required>
+                    <input type="number" name="discount_tiers[${index}][discount]" placeholder="Discount %" min="0" max="100" value="${discount}" step="0.01" required>
+                    <button type="button" class="mmb-remove-tier">Remove</button>
             `;
             this.elements.tiersContainer.appendChild(tierDiv);
             console.log('Tier added to container, total tiers:', this.elements.tiersContainer.querySelectorAll('.mmb-tier-input').length);

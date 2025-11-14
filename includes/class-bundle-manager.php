@@ -71,7 +71,17 @@ class MMB_Bundle_Manager {
             }
         }
         
-        if ( ! $name ) {
+        // Validate name
+        if ( ! $name || empty( trim( $name ) ) ) {
+            error_log( 'ERROR: Bundle name is empty or invalid' );
+            error_log( 'Received name value: ' . var_export( $name, true ) );
+            return false;
+        }
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$this->table}'" );
+        if ( ! $table_exists ) {
+            error_log( 'ERROR: Table ' . $this->table . ' does not exist!' );
             return false;
         }
         

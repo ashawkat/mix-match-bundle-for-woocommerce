@@ -96,14 +96,14 @@
 
 ```bash
 cd wp-content/plugins/
-git clone https://github.com/betatech/mix-match-bundle.git
+git clone https://github.com/ashawkat/mix-match-bundle-for-woocommerce
 ```
 
 Then activate from WordPress admin → Plugins.
 
 ### Manual Upload
 
-1. Download the [latest release](https://github.com/betatech/mix-match-bundle/releases)
+1. Download the [latest release](https://github.com/ashawkat/mix-match-bundle-for-woocommerce/releases)
 2. Upload ZIP via **Plugins** → **Add New** → **Upload Plugin**
 3. Activate and start creating bundles!
 
@@ -437,10 +437,8 @@ Yes! Integrates with FunnelKit, WooCommerce Side Cart, and most theme-based side
 
 ### Need Help?
 
-- 📚 **Documentation:** [https://betatech.co/docs/mix-match-bundle](https://betatech.co/docs/mix-match-bundle)
-- 💬 **Support Forum:** [https://betatech.co/support](https://betatech.co/support)
 - 📧 **Email:** support@betatech.co
-- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/betatech/mix-match-bundle/issues)
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/ashawkat/mix-match-bundle-for-woocommerce/issues)
 
 ### Before Requesting Support
 
@@ -470,8 +468,8 @@ We welcome contributions from the community!
 
 ### Ways to Contribute
 
-1. **Report Bugs** - [GitHub Issues](https://github.com/betatech/mix-match-bundle/issues)
-2. **Request Features** - [GitHub Issues](https://github.com/betatech/mix-match-bundle/issues)
+1. **Report Bugs** - [GitHub Issues](https://github.com/ashawkat/mix-match-bundle-for-woocommerce/issues)
+2. **Request Features** - [GitHub Issues](https://github.com/ashawkat/mix-match-bundle-for-woocommerce/issues)
 3. **Submit Pull Requests** - Fix bugs or add features
 4. **Translate** - Help localize the plugin
 5. **Documentation** - Improve docs and guides
@@ -562,10 +560,10 @@ Full license: [http://www.gnu.org/licenses/gpl-2.0.html](http://www.gnu.org/lice
 
 ## 🔗 Links
 
-- **Plugin Page:** [WordPress.org](https://wordpress.org/plugins/mix-match-bundle/)
+<!-- - **Plugin Page:** [WordPress.org](https://wordpress.org/plugins/mix-match-bundle/) -->
 - **Website:** [https://betatech.co](https://betatech.co)
-- **GitHub:** [https://github.com/betatech/mix-match-bundle](https://github.com/betatech/mix-match-bundle)
-- **Documentation:** [https://betatech.co/docs/mix-match-bundle](https://betatech.co/docs/mix-match-bundle)
+- **GitHub:** [https://github.com/ashawkat/mix-match-bundle-for-woocommerce](https://github.com/betatech/mix-match-bundle)
+- **Demo:** [https://demo.betatech.co/docs/mix-match-bundle](https://betatech.co/docs/mix-match-bundle)
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 - **Translations:** [languages/README.md](languages/README.md)
 
@@ -578,9 +576,9 @@ If you find this plugin helpful, please:
 - ⭐ **Star** this repository
 - 🐛 **Report bugs** to help us improve
 - 💡 **Suggest features** you'd like to see
-- 📝 **Write a review** on [WordPress.org](https://wordpress.org/support/plugin/mix-match-bundle/reviews/)
+<!-- - 📝 **Write a review** on [WordPress.org](https://wordpress.org/support/plugin/mix-match-bundle/reviews/) -->
 - 🗣️ **Tell others** about the plugin
-- ☕ **Buy us a coffee** [Donate](https://betatech.co/donate)
+<!-- - ☕ **Buy us a coffee** [Donate](https://betatech.co/donate) -->
 
 ---
 

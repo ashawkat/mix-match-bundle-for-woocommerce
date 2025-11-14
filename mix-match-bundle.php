@@ -87,7 +87,13 @@ class Mix_Match_Bundle {
     public function __construct() {
         $this->includes();
         $this->hooks();
-        $this->maybe_upgrade_database();
+        
+        // Run database upgrade check only once per version
+        $db_version = get_option( 'mmb_db_version', '0' );
+        if ( version_compare( $db_version, MMB_VERSION, '<' ) ) {
+            $this->maybe_upgrade_database();
+            update_option( 'mmb_db_version', MMB_VERSION );
+        }
     }
     
     private function includes() {
@@ -196,14 +202,15 @@ class Mix_Match_Bundle {
     }
     
     private function maybe_upgrade_database() {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'mmb_bundles';
-        
-        // Check if table exists first
-        $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
-        if ( ! $table_exists ) {
-            return;
-        }
+        try {
+            global $wpdb;
+            $table_name = $wpdb->prefix . 'mmb_bundles';
+            
+            // Check if table exists first
+            $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
+            if ( ! $table_exists ) {
+                return;
+            }
         
         // Check and add use_quantity column
         $column_exists = $wpdb->get_results( 
@@ -407,6 +414,10 @@ class Mix_Match_Bundle {
                 $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN {$column_name} tinyint(1) DEFAULT {$default_value} AFTER cart_behavior" );
             }
         }
+        } catch ( Exception $e ) {
+            // Log error but don't break the site
+            error_log( 'MMB Database Upgrade Error: ' . $e->getMessage() );
+        }
     }
     
     public function activate_plugin() {
@@ -485,7 +496,11 @@ function mmb_save_bundle() {
     if ( $result ) {
         wp_send_json_success( $result );
     } else {
-        wp_send_json_error( __( 'Failed to save bundle', 'mix-match-bundle' ) );
+        // Return detailed error message
+        global $wpdb;
+        $error_message = $wpdb->last_error ? $wpdb->last_error : __( 'Failed to save bundle', 'mix-match-bundle' );
+        error_log( 'Save bundle failed with error: ' . $error_message );
+        wp_send_json_error( $error_message );
     }
 }
 
