@@ -101,6 +101,12 @@ if ( isset( $_GET['mmb_setup_db'] ) && check_admin_referer( 'mmb_setup_db' ) ) {
                     <small><?php echo esc_html__( 'If enabled, customers can add multiple of the same product', 'mix-match-bundle' ); ?></small>
                 </div>
                 
+                <div class="mmb-form-group" id="max_quantity_group" style="display: none;">
+                    <label for="max_quantity"><?php echo esc_html__( 'Maximum Quantity Per Product', 'mix-match-bundle' ); ?></label>
+                    <input type="number" name="max_quantity" id="max_quantity" min="1" max="999" value="10" step="1">
+                    <small><?php echo esc_html__( 'Set the maximum quantity customers can select per product (default: 10)', 'mix-match-bundle' ); ?></small>
+                </div>
+                
                 <div class="mmb-form-group">
                     <label><?php echo esc_html__( 'Discount Tiers', 'mix-match-bundle' ); ?></label>
                     <div id="mmb-tiers-container">

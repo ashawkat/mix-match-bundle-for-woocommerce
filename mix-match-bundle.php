@@ -23,6 +23,96 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'MMB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MMB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MMB_VERSION', '1.0.0' );
+define( 'MMB_DB_VERSION', '2.1' ); // Database version for schema updates
+
+/**
+ * Check and upgrade database if needed
+ * Runs on every admin page load to ensure database is up to date
+ *
+ * @since 2.1
+ */
+function mmb_check_database_upgrade() {
+    // Only check in admin area
+    if ( ! is_admin() ) {
+        return;
+    }
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'mmb_bundles';
+    
+    // Get current database version
+    $current_db_version = get_option( 'mmb_db_version', '1.0' );
+    
+    // Check if upgrade is needed
+    if ( version_compare( $current_db_version, MMB_DB_VERSION, '<' ) ) {
+        error_log( 'MMB: Database upgrade needed from ' . $current_db_version . ' to ' . MMB_DB_VERSION );
+        
+        // Check if table exists first
+        $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
+        if ( ! $table_exists ) {
+            error_log( 'MMB: Table does not exist, skipping upgrade check' );
+            return;
+        }
+        
+        // Version 2.1 upgrade: Add max_quantity column
+        if ( version_compare( $current_db_version, '2.1', '<' ) ) {
+            // Check if column already exists
+            $column_exists = $wpdb->get_results( "SHOW COLUMNS FROM {$table_name} LIKE 'max_quantity'" );
+            
+            if ( empty( $column_exists ) ) {
+                error_log( 'MMB: Adding max_quantity column to database' );
+                
+                // Add the column
+                $result = $wpdb->query( 
+                    "ALTER TABLE {$table_name} 
+                     ADD COLUMN max_quantity int DEFAULT 10 
+                     AFTER use_quantity" 
+                );
+                
+                if ( $result !== false ) {
+                    error_log( 'MMB: Successfully added max_quantity column' );
+                    
+                    // Show admin notice
+                    add_action( 'admin_notices', function() {
+                        ?>
+                        <div class="notice notice-success is-dismissible">
+                            <p>
+                                <strong><?php echo esc_html__( 'Mix & Match Bundle:', 'mix-match-bundle' ); ?></strong>
+                                <?php echo esc_html__( 'Database updated successfully! New "Maximum Quantity" feature is now available.', 'mix-match-bundle' ); ?>
+                            </p>
+                        </div>
+                        <?php
+                    });
+                } else {
+                    error_log( 'MMB: Failed to add max_quantity column: ' . $wpdb->last_error );
+                    
+                    // Show error notice
+                    add_action( 'admin_notices', function() use ( $wpdb ) {
+                        ?>
+                        <div class="notice notice-error">
+                            <p>
+                                <strong><?php echo esc_html__( 'Mix & Match Bundle:', 'mix-match-bundle' ); ?></strong>
+                                <?php echo esc_html__( 'Database update failed. Please check error logs or contact support.', 'mix-match-bundle' ); ?>
+                            </p>
+                            <?php if ( current_user_can( 'manage_options' ) ) : ?>
+                                <p><code><?php echo esc_html( $wpdb->last_error ); ?></code></p>
+                            <?php endif; ?>
+                        </div>
+                        <?php
+                    });
+                    return;
+                }
+            } else {
+                error_log( 'MMB: max_quantity column already exists' );
+            }
+        }
+        
+        // Update the database version
+        update_option( 'mmb_db_version', MMB_DB_VERSION );
+        error_log( 'MMB: Database version updated to ' . MMB_DB_VERSION );
+    }
+}
+add_action( 'admin_init', 'mmb_check_database_upgrade' );
 
 /**
  * Check if WooCommerce is active
@@ -89,10 +179,10 @@ class Mix_Match_Bundle {
         $this->hooks();
         
         // Run database upgrade check only once per version
-        $db_version = get_option( 'mmb_db_version', '0' );
-        if ( version_compare( $db_version, MMB_VERSION, '<' ) ) {
+        $db_version = get_option( 'mmb_db_version', '1.0' );
+        if ( version_compare( $db_version, MMB_DB_VERSION, '<' ) ) {
             $this->maybe_upgrade_database();
-            update_option( 'mmb_db_version', MMB_VERSION );
+            update_option( 'mmb_db_version', MMB_DB_VERSION );
         }
     }
     
@@ -414,6 +504,24 @@ class Mix_Match_Bundle {
                 $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN {$column_name} tinyint(1) DEFAULT {$default_value} AFTER cart_behavior" );
             }
         }
+        
+        // Check and add max_quantity column (v2.1)
+        $max_qty_column_exists = $wpdb->get_results( 
+            $wpdb->prepare(
+                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE table_schema = %s 
+                AND table_name = %s 
+                AND column_name = 'max_quantity'",
+                DB_NAME,
+                $table_name
+            )
+        );
+        
+        if ( empty( $max_qty_column_exists ) ) {
+            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN max_quantity int DEFAULT 10 AFTER use_quantity" );
+            error_log( 'MMB: Added max_quantity column during activation/upgrade' );
+        }
+        
         } catch ( Exception $e ) {
             // Log error but don't break the site
             error_log( 'MMB Database Upgrade Error: ' . $e->getMessage() );
@@ -432,6 +540,7 @@ class Mix_Match_Bundle {
             description longtext,
             enabled tinyint(1) DEFAULT 1,
             use_quantity tinyint(1) DEFAULT 0,
+            max_quantity int DEFAULT 10,
             discount_tiers longtext,
             product_ids longtext,
             heading_text varchar(255) DEFAULT 'Select Your Products Below',
@@ -459,6 +568,10 @@ class Mix_Match_Bundle {
         
         // Run upgrade check
         $this->maybe_upgrade_database();
+        
+        // Set initial database version
+        update_option( 'mmb_db_version', MMB_DB_VERSION );
+        error_log( 'MMB: Plugin activated, database version set to ' . MMB_DB_VERSION );
     }
 }
 

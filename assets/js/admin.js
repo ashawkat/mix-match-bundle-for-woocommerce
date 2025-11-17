@@ -118,6 +118,15 @@
                 this.resetForm();
             });
             
+            // Toggle max quantity field visibility
+            const useQuantityCheckbox = document.getElementById('bundle_use_quantity');
+            const maxQuantityGroup = document.getElementById('max_quantity_group');
+            if (useQuantityCheckbox && maxQuantityGroup) {
+                useQuantityCheckbox.addEventListener('change', () => {
+                    maxQuantityGroup.style.display = useQuantityCheckbox.checked ? 'block' : 'none';
+                });
+            }
+            
             // Product search with debounce
             let searchTimeout;
             this.elements.productSearch.addEventListener('input', (e) => {
@@ -529,6 +538,7 @@
                 description: this.elements.bundleDescription.value,
                 enabled: this.elements.bundleEnabled.checked ? 1 : 0,
                 use_quantity: this.elements.useQuantity.checked ? 1 : 0,
+                max_quantity: document.getElementById('max_quantity') ? parseInt(document.getElementById('max_quantity').value) || 10 : 10,
                 heading_text: this.elements.headingText.value || 'Select Your Products Below',
                 hint_text: this.elements.hintText.value || 'Bundle 2, 3, 4 or 5 items and watch the savings grow.',
                 primary_color: this.elements.primaryColor.value || '#4caf50',
@@ -728,6 +738,17 @@
             this.elements.bundleDescription.value = bundle.description;
             this.elements.bundleEnabled.checked = bundle.enabled === 1;
             this.elements.useQuantity.checked = bundle.use_quantity === 1;
+            
+            // Set max quantity and toggle visibility
+            const maxQuantityInput = document.getElementById('max_quantity');
+            const maxQuantityGroup = document.getElementById('max_quantity_group');
+            if (maxQuantityInput) {
+                maxQuantityInput.value = bundle.max_quantity || 10;
+            }
+            if (maxQuantityGroup) {
+                maxQuantityGroup.style.display = bundle.use_quantity === 1 ? 'block' : 'none';
+            }
+            
             this.elements.headingText.value = bundle.heading_text || 'Select Your Products Below';
             this.elements.hintText.value = bundle.hint_text || 'Bundle 2, 3, 4 or 5 items and watch the savings grow.';
             this.elements.primaryColor.value = bundle.primary_color || '#4caf50';

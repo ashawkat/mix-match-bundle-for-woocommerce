@@ -91,12 +91,21 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 </div>
                             <?php endif; ?>
                             
-                            <?php if ( $bundle['use_quantity'] ) : ?>
+                            <?php if ( $bundle['use_quantity'] ) : 
+                                $max_quantity = isset( $bundle['max_quantity'] ) ? intval( $bundle['max_quantity'] ) : 10;
+                            ?>
                                 <div class="mmb-product-quantity">
-                                    <label><?php echo esc_html__( 'Qty:', 'mix-match-bundle' ); ?></label>
-                                    <input type="number" min="0" max="10" value="0" class="mmb-product-qty-input" 
-                                           data-product-id="<?php echo intval( $product->get_id() ); ?>"
-                                           <?php echo $is_variable ? 'disabled' : ''; ?>>
+                                    <div class="mmb-quantity-controls">
+                                        <button type="button" class="mmb-qty-btn mmb-qty-minus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Decrease quantity', 'mix-match-bundle' ); ?>">
+                                            <span>−</span>
+                                        </button>
+                                        <input type="number" min="0" max="<?php echo esc_attr( $max_quantity ); ?>" value="0" class="mmb-product-qty-input" 
+                                               data-product-id="<?php echo intval( $product->get_id() ); ?>"
+                                               <?php echo $is_variable ? 'disabled' : ''; ?> readonly aria-label="<?php echo esc_attr__( 'Quantity', 'mix-match-bundle' ); ?>">
+                                        <button type="button" class="mmb-qty-btn mmb-qty-plus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Increase quantity', 'mix-match-bundle' ); ?>">
+                                            <span>+</span>
+                                        </button>
+                                    </div>
                                 </div>
                             <?php else : ?>
                                 <label class="mmb-product-checkbox">

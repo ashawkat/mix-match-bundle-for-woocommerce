@@ -38,6 +38,7 @@ class MMB_Bundle_Manager {
             description longtext,
             enabled tinyint(1) DEFAULT 1,
             use_quantity tinyint(1) DEFAULT 0,
+            max_quantity int DEFAULT 10,
             discount_tiers longtext,
             product_ids longtext,
             heading_text varchar(255) DEFAULT 'Select Your Products Below',
@@ -117,6 +118,7 @@ class MMB_Bundle_Manager {
         
         $enabled = isset( $data['enabled'] ) ? intval( $data['enabled'] ) : 1;
         $use_quantity = isset( $data['use_quantity'] ) ? intval( $data['use_quantity'] ) : 0;
+        $max_quantity = isset( $data['max_quantity'] ) ? max( 1, intval( $data['max_quantity'] ) ) : 10;
         $heading_text = isset( $data['heading_text'] ) ? sanitize_text_field( $data['heading_text'] ) : 'Select Your Products Below';
         $hint_text = isset( $data['hint_text'] ) ? sanitize_text_field( $data['hint_text'] ) : 'Bundle 2, 3, 4 or 5 items and watch the savings grow.';
         $primary_color = isset( $data['primary_color'] ) ? sanitize_hex_color( $data['primary_color'] ) : '#4caf50';
@@ -180,6 +182,7 @@ class MMB_Bundle_Manager {
             'description' => $description,
             'enabled' => $enabled,
             'use_quantity' => $use_quantity,
+            'max_quantity' => $max_quantity,
             'product_ids' => wp_json_encode( $product_ids ),
             'discount_tiers' => wp_json_encode( $discount_tiers ),
             'heading_text' => $heading_text,
@@ -208,7 +211,7 @@ class MMB_Bundle_Manager {
                 $this->table,
                 $bundle_data,
                 [ 'id' => $bundle_id ],
-                [ '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d' ],
+                [ '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d' ],
                 [ '%d' ]
             );
             
@@ -240,7 +243,7 @@ class MMB_Bundle_Manager {
             $result = $wpdb->insert(
                 $this->table,
                 $bundle_data,
-                [ '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d' ]
+                [ '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d' ]
             );
             
             error_log( 'Insert result: ' . print_r( $result, true ) );

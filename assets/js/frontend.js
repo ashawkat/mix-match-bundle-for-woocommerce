@@ -278,6 +278,42 @@
                 input.addEventListener('input', () => this.updateBundle());
             });
             
+            // Quantity +/- buttons
+            const qtyMinusBtns = this.wrapper.querySelectorAll('.mmb-qty-minus');
+            const qtyPlusBtns = this.wrapper.querySelectorAll('.mmb-qty-plus');
+            
+            qtyMinusBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const productId = btn.dataset.productId;
+                    const input = this.wrapper.querySelector(`.mmb-product-qty-input[data-product-id="${productId}"]`);
+                    if (input && !input.disabled) {
+                        const currentValue = parseInt(input.value) || 0;
+                        const minValue = parseInt(input.min) || 0;
+                        if (currentValue > minValue) {
+                            input.value = currentValue - 1;
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                });
+            });
+            
+            qtyPlusBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const productId = btn.dataset.productId;
+                    const input = this.wrapper.querySelector(`.mmb-product-qty-input[data-product-id="${productId}"]`);
+                    if (input && !input.disabled) {
+                        const currentValue = parseInt(input.value) || 0;
+                        const maxValue = parseInt(input.max) || 10;
+                        if (currentValue < maxValue) {
+                            input.value = currentValue + 1;
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                });
+            });
+            
             // Variation dropdowns
             this.variationDropdowns.forEach(dropdown => {
                 dropdown.addEventListener('change', (e) => this.handleVariationChange(e.target));
@@ -299,6 +335,8 @@
             const card = dropdown.closest('.mmb-product-card');
             const select = card.querySelector('.mmb-product-select');
             const qtyInput = card.querySelector('.mmb-product-qty-input');
+            const qtyMinusBtn = card.querySelector('.mmb-qty-minus');
+            const qtyPlusBtn = card.querySelector('.mmb-qty-plus');
             const priceDisplay = card.querySelector('.mmb-product-price');
             const variationId = dropdown.value;
             const selectedOption = dropdown.options[dropdown.selectedIndex];
@@ -307,6 +345,8 @@
                 // Enable checkbox or quantity input
                 if (select) select.disabled = false;
                 if (qtyInput) qtyInput.disabled = false;
+                if (qtyMinusBtn) qtyMinusBtn.disabled = false;
+                if (qtyPlusBtn) qtyPlusBtn.disabled = false;
                 
                 // Update price display
                 const price = selectedOption.dataset.price;
@@ -327,6 +367,8 @@
                     qtyInput.disabled = true;
                     qtyInput.value = 0;
                 }
+                if (qtyMinusBtn) qtyMinusBtn.disabled = true;
+                if (qtyPlusBtn) qtyPlusBtn.disabled = true;
                 delete card.dataset.variationId;
                 delete card.dataset.variationPrice;
             }
