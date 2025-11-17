@@ -36,6 +36,7 @@
 
 - **Unlimited Bundles** - Create as many bundles as needed with unique configurations
 - **Tiered Discounts** - Set quantity-based discount tiers (e.g., buy 2 save 10%, buy 5 save 20%)
+- **Drag-and-Drop Product Ordering** - ✨ **NEW!** Visually reorder products with intuitive drag-and-drop interface
 - **Dual Bundle Modes**
   - 📝 **Selection Mode** - Customers pick products with checkboxes
   - 🔢 **Quantity Mode** - Customers set quantities for each product
@@ -117,11 +118,12 @@ Then activate from WordPress admin → Plugins.
 2. **Create** a new bundle or edit inline
 3. **Name** your bundle (e.g., "Build Your Box")
 4. **Select Products** - Search and choose products to include
-5. **Add Tiers** - Set quantity and discount (e.g., 2 items = 10% off)
-6. **Customize** - Colors, text, visibility (optional)
-7. **Save** and copy the shortcode
-8. **Add** shortcode to any page: `[mmb_bundle id="1"]`
-9. **Preview** and test your bundle!
+5. **Reorder Products** - ✨ **NEW!** Drag and drop to set the display order
+6. **Add Tiers** - Set quantity and discount (e.g., 2 items = 10% off)
+7. **Customize** - Colors, text, visibility (optional)
+8. **Save** and copy the shortcode
+9. **Add** shortcode to any page: `[mmb_bundle id="1"]`
+10. **Preview** and test your bundle!
 
 ### Shortcode
 
@@ -183,7 +185,31 @@ if ( function_exists( 'mmb_display_bundle' ) ) {
 | **Description** | Optional bundle description | Textarea |
 | **Mode** | Selection or Quantity mode | Selection/Quantity |
 | **Products** | Products available in bundle | Multi-select |
+| **Product Order** | ✨ **NEW!** Visual order for frontend display | Drag & Drop |
 | **Discount Tiers** | Quantity-based discounts | Unlimited tiers |
+
+### ✨ Product Ordering (NEW!)
+
+**Drag-and-Drop Interface:**
+- Select products to see them in "Selected Products" section
+- Drag products up or down to reorder
+- Products display on frontend in your chosen order
+- Visual order numbers (1, 2, 3...) update in real-time
+- Quick remove button (✕) to deselect products
+- Order persists across edits and saves
+
+**Benefits:**
+- ⭐ Feature best-selling products first
+- 📊 Order by price (high-to-low or low-to-high)
+- 🎯 Strategic placement for better conversions
+- 🔄 Easy reordering anytime by editing bundle
+- 💾 Order is saved with bundle automatically
+
+**Use Cases:**
+- Put seasonal items first during promotions
+- Group complementary products together
+- Order by margin to maximize profit
+- Test different arrangements for A/B testing
 
 ### Design Options
 

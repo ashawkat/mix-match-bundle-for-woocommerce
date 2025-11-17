@@ -426,3 +426,16 @@ msgstr ""
 msgid "All strings are translatable with included POT file"
 msgstr ""
 
+#: admin/bundle-editor.php:91
+msgid "Selected Products (Drag to Reorder)"
+msgstr ""
+
+#: admin/bundle-editor.php:92
+msgid "Products will appear on the frontend in this order. Drag to rearrange."
+msgstr ""
+
+#: admin/bundle-editor.php:93
+msgctxt "Admin product ordering section"
+msgid "Select products above to add them here"
+msgstr ""
+

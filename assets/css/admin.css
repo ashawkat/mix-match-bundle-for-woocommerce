@@ -442,6 +442,133 @@
 }
 
 /* =====================================================
+   SELECTED PRODUCTS LIST (Drag & Drop)
+   ===================================================== */
+
+.mmb-selected-products-list {
+    border: 2px dashed var(--mmb-admin-border-medium);
+    border-radius: var(--mmb-admin-radius-lg);
+    background: var(--mmb-admin-bg-lighter);
+    padding: var(--mmb-admin-spacing-lg);
+    min-height: 80px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.mmb-selected-products-list:empty::after {
+    content: 'Select products above to add them here';
+    display: block;
+    text-align: center;
+    color: var(--mmb-admin-text-muted);
+    font-style: italic;
+    padding: var(--mmb-admin-spacing-2xl);
+}
+
+.mmb-selected-product-item {
+    display: grid;
+    grid-template-columns: 30px 30px 1fr auto auto;
+    gap: var(--mmb-admin-spacing-md);
+    align-items: center;
+    padding: var(--mmb-admin-spacing-lg);
+    background: var(--mmb-admin-bg-white);
+    border: 1px solid var(--mmb-admin-border-normal);
+    border-radius: var(--mmb-admin-radius-md);
+    margin-bottom: var(--mmb-admin-spacing-md);
+    cursor: move;
+    transition: all var(--mmb-admin-transition-base);
+    box-shadow: var(--mmb-admin-shadow-sm);
+}
+
+.mmb-selected-product-item:last-child {
+    margin-bottom: 0;
+}
+
+.mmb-selected-product-item:hover {
+    background: var(--mmb-admin-primary-light);
+    border-color: var(--mmb-admin-primary);
+    box-shadow: var(--mmb-admin-shadow-md);
+    transform: translateX(2px);
+}
+
+.mmb-selected-product-item.dragging {
+    opacity: 0.5;
+    background: var(--mmb-admin-bg-light);
+    cursor: grabbing;
+}
+
+.mmb-selected-product-item.mmb-loading {
+    opacity: 0.6;
+    background: var(--mmb-admin-bg-lighter);
+    animation: mmb-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mmb-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.8; }
+}
+
+.mmb-drag-handle {
+    font-size: 18px;
+    color: var(--mmb-admin-text-muted);
+    cursor: grab;
+    user-select: none;
+    line-height: 1;
+    text-align: center;
+}
+
+.mmb-drag-handle:active {
+    cursor: grabbing;
+}
+
+.mmb-product-order-number {
+    font-size: var(--mmb-admin-font-sm);
+    font-weight: var(--mmb-admin-font-bold);
+    color: var(--mmb-admin-primary);
+    min-width: 25px;
+}
+
+.mmb-selected-product-item .mmb-product-name {
+    font-size: var(--mmb-admin-font-base);
+    font-weight: var(--mmb-admin-font-medium);
+    color: var(--mmb-admin-text-primary);
+}
+
+.mmb-product-price-small {
+    font-size: var(--mmb-admin-font-sm);
+    color: var(--mmb-admin-text-secondary);
+    font-weight: var(--mmb-admin-font-medium);
+}
+
+.mmb-remove-selected-product {
+    padding: var(--mmb-admin-spacing-xs) var(--mmb-admin-spacing-md);
+    font-size: var(--mmb-admin-font-base);
+    font-weight: var(--mmb-admin-font-bold);
+    background: transparent;
+    border: 1px solid var(--mmb-admin-border-normal);
+    border-radius: var(--mmb-admin-radius-sm);
+    color: var(--mmb-admin-text-muted);
+    cursor: pointer;
+    transition: all var(--mmb-admin-transition-fast);
+    line-height: 1;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mmb-remove-selected-product:hover {
+    background: #fee;
+    border-color: #c00;
+    color: #c00;
+    transform: scale(1.1);
+}
+
+.mmb-remove-selected-product:active {
+    transform: scale(0.95);
+}
+
+/* =====================================================
    DISCOUNT TIERS
    ===================================================== */
 

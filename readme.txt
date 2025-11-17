@@ -25,6 +25,7 @@ Perfect for WooCommerce stores looking to increase sales through bundle deals, v
 
 * **Unlimited Bundles** - Create as many bundles as you need with custom names and descriptions
 * **Tiered Discount System** - Set multiple quantity-based discount tiers (e.g., buy 2 get 10% off, buy 5 get 20% off)
+* **Drag-and-Drop Product Ordering** - NEW! Visually reorder products with intuitive drag-and-drop interface - control exactly how products appear to customers
 * **Dual Selection Modes**
   * **Selection Mode** - Customers choose products with checkboxes
   * **Quantity Mode** - Customers set quantities for each product
@@ -69,11 +70,12 @@ The plugin includes translation files for 28 languages:
 
 1. **Create Bundle** - Navigate to Mix & Match in WordPress admin
 2. **Select Products** - Choose which products customers can bundle
-3. **Set Discount Tiers** - Configure quantity-based discounts (e.g., 2 items = 10% off, 3 items = 15% off)
-4. **Customize Design** - Match colors to your brand and customize text
-5. **Add to Page** - Use shortcode `[mmb_bundle id="X"]` on any page
-6. **Customers Shop** - They select products, see real-time discounts, and add bundles to cart
-7. **Automatic Discounts** - Discounts apply automatically at checkout
+3. **Reorder Products** - NEW! Drag and drop products to control display order on frontend
+4. **Set Discount Tiers** - Configure quantity-based discounts (e.g., 2 items = 10% off, 3 items = 15% off)
+5. **Customize Design** - Match colors to your brand and customize text
+6. **Add to Page** - Use shortcode `[mmb_bundle id="X"]` on any page
+7. **Customers Shop** - They select products, see real-time discounts, and add bundles to cart
+8. **Automatic Discounts** - Discounts apply automatically at checkout
 
 = 📱 Mobile Experience =
 
@@ -199,6 +201,10 @@ The plugin works with simple and variable products. Subscription product support
 = What happens if I deactivate the plugin? =
 
 Bundles created with the plugin will no longer display, but your products remain unaffected. Bundle-related data is safely stored and restored if you reactivate.
+
+= Can I control the order products appear on the frontend? =
+
+Yes! NEW FEATURE: We've added an intuitive drag-and-drop interface. After selecting products, they appear in a "Selected Products" section where you can drag them up or down to reorder. Products will display on the frontend in exactly the order you set. This is perfect for featuring bestsellers first or arranging products strategically!
 
 = Can I limit product quantities? =
 

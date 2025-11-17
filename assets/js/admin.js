@@ -19,7 +19,22 @@
          * Initialize the admin interface
          */
         init() {
+            console.log('🚀 === MMB Admin Initializing ===');
+            
             this.cacheDom();
+            
+            // Verify critical elements exist
+            console.log('Verifying DOM elements...');
+            console.log('- Bundle form:', !!this.elements.form);
+            console.log('- Products list:', !!this.elements.productsList);
+            console.log('- Selected products list:', !!this.elements.selectedProductsList);
+            console.log('- Selected products group:', !!this.elements.selectedProductsGroup);
+            
+            if (!this.elements.selectedProductsList || !this.elements.selectedProductsGroup) {
+                console.warn('⚠️ Selected products elements not found on initial load');
+                console.log('This might be normal if the HTML template is old. Elements will be re-cached when needed.');
+            }
+            
             this.bindEvents();
             this.loadBundles();
             this.initSweetAlert();
@@ -31,6 +46,12 @@
             if (this.elements.tiersContainer.querySelectorAll('.mmb-tier-input').length === 0) {
                 this.addTierInput(2, 10);
             }
+            
+            console.log('✅ MMB Admin Initialized');
+            
+            // Make this accessible globally for debugging
+            window.MMB_Admin = this;
+            console.log('💡 TIP: You can access MMB_Admin from console for debugging');
         },
         
         /**
@@ -112,6 +133,46 @@
                     this.updateSelectedProducts(e.target);
                 }
             });
+            
+            // Selected products drag and drop (delegated) - only if element exists
+            if (this.elements.selectedProductsList) {
+                this.elements.selectedProductsList.addEventListener('dragstart', (e) => {
+                    if (e.target.classList.contains('mmb-selected-product-item')) {
+                        e.target.classList.add('dragging');
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/html', e.target.innerHTML);
+                    }
+                });
+                
+                this.elements.selectedProductsList.addEventListener('dragend', (e) => {
+                    if (e.target.classList.contains('mmb-selected-product-item')) {
+                        e.target.classList.remove('dragging');
+                    }
+                });
+                
+                this.elements.selectedProductsList.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const afterElement = this.getDragAfterElement(this.elements.selectedProductsList, e.clientY);
+                    const draggable = document.querySelector('.dragging');
+                    if (draggable) {
+                        if (afterElement == null) {
+                            this.elements.selectedProductsList.appendChild(draggable);
+                        } else {
+                            this.elements.selectedProductsList.insertBefore(draggable, afterElement);
+                        }
+                        // Update order array
+                        this.updateProductOrder();
+                    }
+                });
+                
+                // Remove product from selected list (delegated)
+                this.elements.selectedProductsList.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('mmb-remove-selected-product')) {
+                        const productId = parseInt(e.target.dataset.productId);
+                        this.removeSelectedProduct(productId);
+                    }
+                });
+            }
             
             // Bundle actions (delegated)
             this.elements.bundlesContainer.addEventListener('click', (e) => {
@@ -457,7 +518,8 @@
          */
         async saveBundle() {
             const discountTiers = this.getDiscountTiers();
-            const productIds = Array.from(this.selectedProductIds);
+            // Use ordered array instead of Set to preserve order
+            const productIds = [...this.selectedProductsOrder];
             
             const formData = {
                 action: 'mmb_save_bundle',
@@ -488,7 +550,7 @@
             
             console.log('=== SAVING BUNDLE ===');
             console.log('Bundle name:', formData.name);
-            console.log('Product IDs:', productIds);
+            console.log('Product IDs (in order):', productIds);
             console.log('Discount tiers:', discountTiers);
             console.log('Full form data:', formData);
             
@@ -682,9 +744,19 @@
             this.elements.showHintText.checked = bundle.show_hint_text !== 0;
             this.elements.showProgressText.checked = bundle.show_progress_text !== 0;
             
-            // Store selected products in state
-            this.selectedProductIds = new Set(bundle.product_ids.map(id => parseInt(id)));
+            // Store selected products in state (preserving order)
+            this.selectedProductsOrder = bundle.product_ids.map(id => parseInt(id));
+            this.selectedProductIds = new Set(this.selectedProductsOrder);
             console.log('Selected product IDs:', this.selectedProductIds);
+            console.log('Product order:', this.selectedProductsOrder);
+            
+            // Ensure all selected products are in cache before rendering
+            // This prevents "not found in cache" warnings
+            this.ensureProductsInCache(this.selectedProductsOrder).then(() => {
+                console.log('✅ All selected products ensured in cache');
+                // Render the selected products list
+                this.renderSelectedProducts();
+            });
             
             // Clear and repopulate tiers
             this.elements.tiersContainer.innerHTML = '';
@@ -720,6 +792,50 @@
         },
         
         /**
+         * Ensure products are in cache
+         * Fetches product data if not already cached
+         */
+        async ensureProductsInCache(productIds) {
+            if (!productIds || productIds.length === 0) {
+                return;
+            }
+            
+            // Check which products are missing from cache
+            const cachedIds = new Set(this.allProducts.map(p => p.id));
+            const missingIds = productIds.filter(id => !cachedIds.has(id));
+            
+            if (missingIds.length === 0) {
+                console.log('✅ All products already in cache');
+                return;
+            }
+            
+            console.log('📥 Fetching', missingIds.length, 'missing products:', missingIds);
+            
+            // Fetch all products to ensure we get the missing ones
+            // This is simpler than fetching individual products
+            try {
+                const response = await this.ajax({
+                    action: 'mmb_search_products',
+                    nonce: mmb_admin.nonce,
+                    search: '' // Empty search returns all products
+                });
+                
+                if (response.success) {
+                    // Merge into cache
+                    const existingIds = new Set(this.allProducts.map(p => p.id));
+                    response.data.forEach(product => {
+                        if (!existingIds.has(product.id)) {
+                            this.allProducts.push(product);
+                        }
+                    });
+                    console.log('✅ Cache updated, total products:', this.allProducts.length);
+                }
+            } catch (error) {
+                console.error('Error fetching products for cache:', error);
+            }
+        },
+        
+        /**
          * Search products
          */
         async searchProducts(searchTerm) {
@@ -735,8 +851,21 @@
                 
                     if (response.success) {
                     console.log('Products found:', response.data.length);
-                    this.allProducts = response.data;
-                    this.renderProducts(response.data);
+                    
+                    // Merge new products into cache instead of replacing
+                    // This ensures previously selected products remain in cache
+                    const newProducts = response.data;
+                    const existingIds = new Set(this.allProducts.map(p => p.id));
+                    
+                    newProducts.forEach(product => {
+                        if (!existingIds.has(product.id)) {
+                            this.allProducts.push(product);
+                            existingIds.add(product.id);
+                        }
+                    });
+                    
+                    console.log('Total products in cache:', this.allProducts.length);
+                    this.renderProducts(response.data); // Still render only search results
                 } else {
                     console.error('Search failed:', response);
                     this.renderProducts([]);
@@ -773,15 +902,202 @@
         updateSelectedProducts(checkbox) {
             const productId = parseInt(checkbox.value);
             
+            console.log('=== updateSelectedProducts called ===');
+            console.log('Product ID:', productId);
+            console.log('Checkbox checked:', checkbox.checked);
+            
             if (checkbox.checked) {
                 this.selectedProductIds.add(productId);
-                console.log('Added product:', productId);
+                // Add to ordered array if not already present
+                if (!this.selectedProductsOrder.includes(productId)) {
+                    this.selectedProductsOrder.push(productId);
+                }
+                console.log('✅ Added product:', productId);
             } else {
                 this.selectedProductIds.delete(productId);
-                console.log('Removed product:', productId);
+                // Remove from ordered array
+                const index = this.selectedProductsOrder.indexOf(productId);
+                if (index > -1) {
+                    this.selectedProductsOrder.splice(index, 1);
+                }
+                console.log('❌ Removed product:', productId);
             }
             
             console.log('All selected products:', Array.from(this.selectedProductIds));
+            console.log('Product order:', this.selectedProductsOrder);
+            console.log('All products cache:', this.allProducts.length, 'products');
+            
+            // Update the selected products display with delay for heavy sites
+            console.log('🔄 Calling renderSelectedProducts...');
+            this.renderSelectedProducts();
+            console.log('✅ renderSelectedProducts completed');
+        },
+        
+        /**
+         * Remove product from selection
+         */
+        removeSelectedProduct(productId) {
+            // Remove from Set
+            this.selectedProductIds.delete(productId);
+            
+            // Remove from order array
+            const index = this.selectedProductsOrder.indexOf(productId);
+            if (index > -1) {
+                this.selectedProductsOrder.splice(index, 1);
+            }
+            
+            // Uncheck in products list
+            const checkbox = this.elements.productsList.querySelector(`input[value="${productId}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            // Re-render
+            this.renderSelectedProducts();
+        },
+        
+        /**
+         * Render selected products list
+         */
+        renderSelectedProducts() {
+            console.log('🎨 === renderSelectedProducts START ===');
+            
+            // Check if elements exist
+            console.log('Checking elements...');
+            console.log('- selectedProductsList:', this.elements.selectedProductsList);
+            console.log('- selectedProductsGroup:', this.elements.selectedProductsGroup);
+            
+            if (!this.elements.selectedProductsList || !this.elements.selectedProductsGroup) {
+                console.error('❌ Elements not found! Cannot render selected products.');
+                console.log('Try re-caching DOM elements...');
+                
+                // Try to re-cache the elements
+                this.elements.selectedProductsList = document.getElementById('mmb-selected-products-list');
+                this.elements.selectedProductsGroup = document.getElementById('mmb-selected-products-group');
+                
+                if (!this.elements.selectedProductsList || !this.elements.selectedProductsGroup) {
+                    console.error('❌ Elements still not found after re-caching!');
+                    return;
+                }
+                console.log('✅ Elements re-cached successfully');
+            }
+            
+            console.log('Selected products count:', this.selectedProductsOrder.length);
+            
+            if (this.selectedProductsOrder.length === 0) {
+                console.log('No products selected, hiding section');
+                this.elements.selectedProductsGroup.style.display = 'none';
+                this.elements.selectedProductsList.innerHTML = '';
+                console.log('🎨 === renderSelectedProducts END (empty) ===');
+                return;
+            }
+            
+            console.log('✅ Showing selected products section');
+            this.elements.selectedProductsGroup.style.display = 'block';
+            this.elements.selectedProductsList.innerHTML = '';
+            
+            console.log('Rendering', this.selectedProductsOrder.length, 'products...');
+            
+            let renderedCount = 0;
+            const missingProductIds = [];
+            
+            this.selectedProductsOrder.forEach((productId, index) => {
+                console.log(`Rendering product ${index + 1}/${this.selectedProductsOrder.length}: ID ${productId}`);
+                
+                const product = this.allProducts.find(p => p.id === productId);
+                if (!product) {
+                    console.warn(`⚠️ Product ${productId} not found in cache!`);
+                    missingProductIds.push(productId);
+                    // Create a placeholder element
+                    const item = document.createElement('div');
+                    item.className = 'mmb-selected-product-item mmb-loading';
+                    item.draggable = false;
+                    item.dataset.productId = productId;
+                    
+                    item.innerHTML = `
+                        <span class="mmb-drag-handle">⋮⋮</span>
+                        <span class="mmb-product-order-number">${index + 1}.</span>
+                        <span class="mmb-product-name">Loading product ${productId}...</span>
+                        <span class="mmb-product-price-small">---</span>
+                        <button type="button" class="mmb-remove-selected-product" data-product-id="${productId}" title="Remove">✕</button>
+                    `;
+                    
+                    this.elements.selectedProductsList.appendChild(item);
+                    return;
+                }
+                
+                console.log(`- Product found:`, product.name);
+                
+                const item = document.createElement('div');
+                item.className = 'mmb-selected-product-item';
+                item.draggable = true;
+                item.dataset.productId = productId;
+                
+                item.innerHTML = `
+                    <span class="mmb-drag-handle">⋮⋮</span>
+                    <span class="mmb-product-order-number">${index + 1}.</span>
+                    <span class="mmb-product-name">${this.escapeHtml(product.name)}</span>
+                    <span class="mmb-product-price-small">${product.price}</span>
+                    <button type="button" class="mmb-remove-selected-product" data-product-id="${productId}" title="Remove">✕</button>
+                `;
+                
+                this.elements.selectedProductsList.appendChild(item);
+                renderedCount++;
+                console.log(`✅ Product ${index + 1} rendered successfully`);
+            });
+            
+            console.log(`✅ Rendered ${renderedCount} products total`);
+            console.log('Final HTML length:', this.elements.selectedProductsList.innerHTML.length);
+            
+            // If we have missing products, fetch them and re-render
+            if (missingProductIds.length > 0) {
+                console.log('🔄 Fetching', missingProductIds.length, 'missing products and re-rendering...');
+                this.ensureProductsInCache(missingProductIds).then(() => {
+                    console.log('Re-rendering with fetched products...');
+                    this.renderSelectedProducts();
+                });
+            }
+            
+            console.log('🎨 === renderSelectedProducts END (success) ===');
+        },
+        
+        /**
+         * Update product order from DOM
+         */
+        updateProductOrder() {
+            if (!this.elements.selectedProductsList) {
+                return;
+            }
+            
+            const items = this.elements.selectedProductsList.querySelectorAll('.mmb-selected-product-item');
+            this.selectedProductsOrder = Array.from(items).map(item => parseInt(item.dataset.productId));
+            console.log('Updated product order:', this.selectedProductsOrder);
+            
+            // Update order numbers
+            items.forEach((item, index) => {
+                const orderNumber = item.querySelector('.mmb-product-order-number');
+                if (orderNumber) {
+                    orderNumber.textContent = `${index + 1}.`;
+                }
+            });
+        },
+        
+        /**
+         * Get drag after element
+         */
+        getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.mmb-selected-product-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
         },
         
         /**
@@ -886,6 +1202,8 @@
             this.elements.productsList.innerHTML = '';
             this.elements.tiersContainer.innerHTML = '';
             this.selectedProductIds.clear();
+            this.selectedProductsOrder = [];
+            this.renderSelectedProducts(); // Hide selected products section
             this.addTierInput(2, 10);
             this.searchProducts('');
         },
@@ -897,6 +1215,42 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        },
+        
+        /**
+         * Debug helper - Check current state
+         */
+        debugState() {
+            console.log('=== MMB DEBUG STATE ===');
+            console.log('Selected Product IDs:', Array.from(this.selectedProductIds));
+            console.log('Product Order:', this.selectedProductsOrder);
+            console.log('All Products Cache:', this.allProducts.length, 'products');
+            console.log('Elements:', {
+                form: !!this.elements.form,
+                productsList: !!this.elements.productsList,
+                selectedProductsList: !!this.elements.selectedProductsList,
+                selectedProductsGroup: !!this.elements.selectedProductsGroup
+            });
+            
+            if (this.elements.selectedProductsGroup) {
+                console.log('Selected Products Group Display:', this.elements.selectedProductsGroup.style.display);
+                console.log('Selected Products Group HTML:', this.elements.selectedProductsGroup.outerHTML.substring(0, 200));
+            }
+            
+            if (this.elements.selectedProductsList) {
+                console.log('Selected Products List Children:', this.elements.selectedProductsList.children.length);
+                console.log('Selected Products List HTML Length:', this.elements.selectedProductsList.innerHTML.length);
+            }
+        },
+        
+        /**
+         * Debug helper - Force re-render
+         */
+        forceRerender() {
+            console.log('🔧 Forcing re-render...');
+            this.cacheDom();
+            this.renderSelectedProducts();
+            console.log('✅ Re-render complete');
         }
     };
     

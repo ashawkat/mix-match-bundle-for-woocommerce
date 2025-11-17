@@ -695,12 +695,12 @@
 .mmb-mobile-sticky-total {
     font-size: var(--mmb-font-xl);
     font-weight: var(--mmb-font-bold);
-    color: var(--mmb-text-dark);
+    color: var(--mmb-primary-color);
 }
 
 .mmb-mobile-cart-discount {
     font-size: var(--mmb-font-xs);
-    color: #558b2f;
+    color: var(--mmb-primary-color);
 }
 
 .mmb-mobile-discount-text {
