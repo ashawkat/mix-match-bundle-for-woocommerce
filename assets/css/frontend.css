@@ -224,6 +224,21 @@
     line-height: 1.3;
 }
 
+.mmb-product-link {
+    color: var(--mmb-text-primary);
+    text-decoration: none;
+    transition: color var(--mmb-transition-fast);
+}
+
+.mmb-product-link:hover {
+    color: var(--mmb-primary-color);
+    text-decoration: underline;
+}
+
+.mmb-product-link:visited {
+    color: var(--mmb-text-primary);
+}
+
 .mmb-product-price {
     display: block;
     font-size: var(--mmb-font-lg);
@@ -340,7 +355,7 @@
 .mmb-product-qty-input {
     width: 50px;
     padding: 8px 6px;
-    border: none;
+    border: none !important;
     font-size: 16px;
     font-weight: var(--mmb-font-bold);
     text-align: center;
@@ -564,6 +579,30 @@
     color: var(--mmb-primary-color);
     background: color-mix(in srgb, var(--mmb-primary-color) 10%, transparent);
     font-weight: var(--mmb-font-extrabold);
+}
+
+/* Mobile Only Savings Progress Section (before product grid) */
+.mmb-mobile-only-tiers {
+    display: none; /* Hidden on desktop */
+    margin-bottom: var(--mmb-spacing-xl);
+    margin-top: var(--mmb-spacing-lg);
+}
+
+.mmb-mobile-only-tiers h3 {
+    font-size: var(--mmb-font-xl);
+    text-align: center;
+    margin-bottom: var(--mmb-spacing-md);
+}
+
+/* Mobile: Show tiers before products, hide sidebar tiers */
+@media (max-width: 768px) {
+    .mmb-mobile-only-tiers {
+        display: block; /* Show on mobile */
+    }
+    
+    .mmb-bundle-sidebar .mmb-discount-tiers-simple {
+        display: none; /* Hide sidebar tiers on mobile */
+    }
 }
 
 /* =====================================================

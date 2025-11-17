@@ -35,6 +35,31 @@ if ( ! defined( 'ABSPATH' ) ) {
                 <p class="mmb-bundle-hint"><?php echo esc_html( $bundle['hint_text'] ); ?></p>
             <?php endif; ?>
             
+            <!-- Savings Progress Section - Mobile Only (before products) -->
+            <div class="mmb-discount-tiers-simple mmb-mobile-only-tiers" data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>">
+                <?php if ( ! empty( $bundle['show_progress_text'] ) ) : ?>
+                    <h3><?php echo esc_html( $bundle['progress_text'] ?: __( 'Your Savings Progress', 'mix-match-bundle' ) ); ?></h3>
+                <?php endif; ?>
+                <div class="mmb-tiers-list">
+                    <?php foreach ( $bundle['discount_tiers'] as $index => $tier ) : ?>
+                        <div class="mmb-tier-item" data-quantity="<?php echo intval( $tier['quantity'] ); ?>" data-discount="<?php echo floatval( $tier['discount'] ); ?>">
+                            <div class="mmb-tier-check">
+                                <span class="mmb-check-icon">✓</span>
+                            </div>
+                            <div class="mmb-tier-info">
+                                <span class="mmb-tier-text">
+                                    <?php 
+                                    /* translators: 1: quantity, 2: discount percentage */
+                                    echo esc_html( sprintf( __( 'Buy %1$d items', 'mix-match-bundle' ), intval( $tier['quantity'] ) ) ); 
+                                    ?>
+                                </span>
+                                <span class="mmb-tier-discount"><?php echo floatval( $tier['discount'] ); ?>% <?php echo esc_html__( 'OFF', 'mix-match-bundle' ); ?></span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            
             <div class="mmb-products-grid">
                 <?php foreach ( $products as $product ) : 
                     $is_variable = $product->is_type( 'variable' );
@@ -48,7 +73,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             <?php echo $product->get_image( 'medium' ); ?>
                         </div>
                         <div class="mmb-product-info">
-                            <h4><?php echo esc_html( $product->get_name() ); ?></h4>
+                            <h4><a href="<?php echo esc_url( get_permalink( $product->get_id() ) ); ?>" target="_blank" class="mmb-product-link"><?php echo esc_html( $product->get_name() ); ?></a></h4>
                             <p class="mmb-product-price" data-base-price="<?php echo esc_attr( $product->get_price() ); ?>">
                                 <?php 
                                 if ( $is_variable ) {
@@ -180,8 +205,25 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="mmb-mobile-sticky-cart" data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>">
         <!-- Mobile Discount Badge -->
         <div class="mmb-mobile-discount-badge" id="mmb-mobile-discount-badge">
-            <span class="mmb-mobile-badge-icon">🎉</span>
-            <span class="mmb-mobile-badge-text"><?php echo esc_html__( 'No discount yet', 'mix-match-bundle' ); ?></span>
+            <span class="mmb-mobile-badge-icon">🎯</span>
+            <span class="mmb-mobile-badge-text">
+                <?php 
+                // Show first tier message if available
+                if ( ! empty( $bundle['discount_tiers'] ) ) {
+                    $first_tier = $bundle['discount_tiers'][0];
+                    $tier_qty = intval( $first_tier['quantity'] );
+                    $tier_discount = floatval( $first_tier['discount'] );
+                    echo esc_html( sprintf( 
+                        __( 'Add %1$d %2$s to get %3$s%% OFF', 'mix-match-bundle' ),
+                        $tier_qty,
+                        _n( 'item', 'items', $tier_qty, 'mix-match-bundle' ),
+                        $tier_discount
+                    ) );
+                } else {
+                    echo esc_html__( 'Select items to see your discount', 'mix-match-bundle' );
+                }
+                ?>
+            </span>
         </div>
         
         <div class="mmb-mobile-cart-content">

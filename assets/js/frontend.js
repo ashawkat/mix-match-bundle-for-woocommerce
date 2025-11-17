@@ -547,6 +547,13 @@
          * Update tier display
          */
         updateTierDisplay(itemCount, discountPercentage) {
+            // Get all tiers sorted by quantity
+            const allTiers = Array.from(this.tierItems).map(item => ({
+                quantity: parseInt(item.dataset.quantity),
+                discount: parseFloat(item.dataset.discount),
+                element: item
+            })).sort((a, b) => a.quantity - b.quantity);
+            
             // Update desktop tiers
             this.tierItems.forEach(tierItem => {
                 const tierQty = parseInt(tierItem.dataset.quantity);
@@ -564,25 +571,55 @@
                 }
             });
             
+            // Find next tier to unlock
+            const nextTier = allTiers.find(tier => itemCount < tier.quantity);
+            
             // Update mobile discount badge
             if (this.mobileDiscountBadge) {
                 if (discountPercentage > 0) {
                     this.mobileDiscountBadge.classList.add('active');
                     const emoji = discountPercentage >= 20 ? '🎉' : discountPercentage >= 15 ? '🎁' : '✨';
+                    
+                    // Calculate average price per item
+                    const currentSubtotal = this.bundleData ? parseFloat(this.bundleData.subtotal || 0) : 0;
+                    const avgPricePerItem = itemCount > 0 ? currentSubtotal / itemCount : 0;
+                    
+                    // Show progress to next tier if available
+                    let badgeText = `Save ${discountPercentage}% on this bundle!`;
+                    if (nextTier) {
+                        const itemsNeeded = nextTier.quantity - itemCount;
+                        const estimatedAmountNeeded = itemsNeeded * avgPricePerItem;
+                        badgeText = `Add ${itemsNeeded} more item${itemsNeeded > 1 ? 's' : ''} to get ${nextTier.discount}% off!`;
+                    }
+                    
                     this.mobileDiscountBadge.innerHTML = `
                         <span class="mmb-mobile-badge-icon">${emoji}</span>
-                        <span class="mmb-mobile-badge-text">Save ${discountPercentage}% on this bundle!</span>
+                        <span class="mmb-mobile-badge-text">${badgeText}</span>
                     `;
                     if (this.primaryColor) {
                         this.mobileDiscountBadge.style.setProperty('background', `linear-gradient(135deg, ${this.primaryColor} 0%, ${this.primaryColor} 100%)`, 'important');
                         this.mobileDiscountBadge.style.setProperty('color', '#fff', 'important');
                     }
                 } else {
+                    // No discount yet - show how many items needed for first tier
                     this.mobileDiscountBadge.classList.remove('active');
-                    this.mobileDiscountBadge.innerHTML = `
-                        <span class="mmb-mobile-badge-icon">🎉</span>
-                        <span class="mmb-mobile-badge-text">No discount yet</span>
-                    `;
+                    
+                    if (nextTier) {
+                        const itemsNeeded = nextTier.quantity - itemCount;
+                        const currentSubtotal = this.bundleData ? parseFloat(this.bundleData.subtotal || 0) : 0;
+                        const avgPricePerItem = itemCount > 0 ? currentSubtotal / itemCount : 50; // Default estimate if no items
+                        const estimatedAmountNeeded = itemsNeeded * avgPricePerItem;
+                        
+                        this.mobileDiscountBadge.innerHTML = `
+                            <span class="mmb-mobile-badge-icon">🎯</span>
+                            <span class="mmb-mobile-badge-text">Add ${itemsNeeded} more item${itemsNeeded > 1 ? 's' : ''} to get ${nextTier.discount}% OFF</span>
+                        `;
+                    } else {
+                        this.mobileDiscountBadge.innerHTML = `
+                            <span class="mmb-mobile-badge-icon">🎯</span>
+                            <span class="mmb-mobile-badge-text">Select items to see your discount</span>
+                        `;
+                    }
                 }
             }
         },
@@ -628,13 +665,28 @@
                 item.style.removeProperty('color');
             });
             
-            // Reset mobile badge
+            // Reset mobile badge - get first tier to show message
             if (this.mobileDiscountBadge) {
                 this.mobileDiscountBadge.classList.remove('active');
-                this.mobileDiscountBadge.innerHTML = `
-                    <span class="mmb-mobile-badge-icon">🎉</span>
-                    <span class="mmb-mobile-badge-text">No discount yet</span>
-                `;
+                
+                // Get first tier to show initial message
+                const allTiers = Array.from(this.tierItems).map(item => ({
+                    quantity: parseInt(item.dataset.quantity),
+                    discount: parseFloat(item.dataset.discount)
+                })).sort((a, b) => a.quantity - b.quantity);
+                
+                const firstTier = allTiers[0];
+                if (firstTier) {
+                    this.mobileDiscountBadge.innerHTML = `
+                        <span class="mmb-mobile-badge-icon">🎯</span>
+                        <span class="mmb-mobile-badge-text">Add ${firstTier.quantity} item${firstTier.quantity > 1 ? 's' : ''} to get ${firstTier.discount}% OFF</span>
+                    `;
+                } else {
+                    this.mobileDiscountBadge.innerHTML = `
+                        <span class="mmb-mobile-badge-icon">🎯</span>
+                        <span class="mmb-mobile-badge-text">Select items to see your discount</span>
+                    `;
+                }
             }
             
             this.updateMobileStickyCart();
