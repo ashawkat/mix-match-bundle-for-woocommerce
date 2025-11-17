@@ -9,6 +9,7 @@
         
         // State management
         selectedProductIds: new Set(), // Use Set for better performance
+        selectedProductsOrder: [], // Array to maintain order
         allProducts: [], // Cache all products
         
         // DOM elements
@@ -60,6 +61,8 @@
                 showProgressText: document.getElementById('show_progress_text'),
                 productSearch: document.getElementById('mmb-product-search'),
                 productsList: document.getElementById('mmb-products-list'),
+                selectedProductsList: document.getElementById('mmb-selected-products-list'),
+                selectedProductsGroup: document.getElementById('mmb-selected-products-group'),
                 tiersContainer: document.getElementById('mmb-tiers-container'),
                 bundlesContainer: document.getElementById('mmb-bundles-container'),
                 addTierBtn: document.getElementById('mmb-add-tier'),
@@ -453,6 +456,9 @@
          * Save bundle
          */
         async saveBundle() {
+            const discountTiers = this.getDiscountTiers();
+            const productIds = Array.from(this.selectedProductIds);
+            
             const formData = {
                 action: 'mmb_save_bundle',
                 nonce: mmb_admin.nonce,
@@ -476,11 +482,15 @@
                 show_heading_text: this.elements.showHeadingText.checked ? 1 : 0,
                 show_hint_text: this.elements.showHintText.checked ? 1 : 0,
                 show_progress_text: this.elements.showProgressText.checked ? 1 : 0,
-                product_ids: Array.from(this.selectedProductIds),
-                discount_tiers: this.getDiscountTiers()
+                product_ids: productIds,
+                discount_tiers: discountTiers
             };
             
-            console.log('Saving bundle with data:', formData);
+            console.log('=== SAVING BUNDLE ===');
+            console.log('Bundle name:', formData.name);
+            console.log('Product IDs:', productIds);
+            console.log('Discount tiers:', discountTiers);
+            console.log('Full form data:', formData);
             
             // Validation
             if (!formData.name || formData.name.trim() === '') {
@@ -524,18 +534,31 @@
                     this.loadBundles();
                     } else {
                     console.error('Save failed:', response);
+                    
+                    // Get detailed error message
+                    let errorMessage = 'Failed to save bundle';
+                    if (response.data) {
+                        if (typeof response.data === 'string') {
+                            errorMessage = response.data;
+                        } else if (response.data.message) {
+                            errorMessage = response.data.message;
+                        }
+                    }
+                    
+                    console.error('Error message:', errorMessage);
+                    
                     await this.showAlert({
                         type: 'error',
-                        title: 'Error',
-                        text: response.data || 'Failed to save bundle'
+                        title: 'Error Saving Bundle',
+                        text: errorMessage
                     });
                 }
             } catch (error) {
                 console.error('Save error:', error);
                 await this.showAlert({
                     type: 'error',
-                    title: 'Error',
-                    text: 'Failed to save bundle. Please try again.'
+                    title: 'Network Error',
+                    text: 'Failed to communicate with the server. Please check your connection and try again.'
                 });
             }
         },

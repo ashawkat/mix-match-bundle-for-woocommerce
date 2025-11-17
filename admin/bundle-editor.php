@@ -6,9 +6,43 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+// Check database status
+global $wpdb;
+$table_name = $wpdb->prefix . 'mmb_bundles';
+$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
+
+// Handle manual setup request
+if ( isset( $_GET['mmb_setup_db'] ) && check_admin_referer( 'mmb_setup_db' ) ) {
+    $plugin_instance = Mix_Match_Bundle::get_instance();
+    $plugin_instance->activate_plugin();
+    
+    // Re-check if table was created
+    $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
+    
+    if ( $table_exists ) {
+        echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Database table created successfully!', 'mix-match-bundle' ) . '</p></div>';
+    } else {
+        echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Failed to create database table. Please check your database permissions.', 'mix-match-bundle' ) . '</p></div>';
+    }
+}
 ?>
 <div class="wrap">
     <h1><?php echo esc_html__( 'Mix & Match Bundles', 'mix-match-bundle' ); ?></h1>
+    
+    <?php if ( ! $table_exists ) : ?>
+    <div class="notice notice-warning">
+        <p>
+            <strong><?php echo esc_html__( 'Database Setup Required', 'mix-match-bundle' ); ?></strong><br>
+            <?php echo esc_html__( 'The plugin database table does not exist. This usually happens on fresh installations.', 'mix-match-bundle' ); ?>
+        </p>
+        <p>
+            <a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'mmb_setup_db', '1' ), 'mmb_setup_db' ) ); ?>" class="button button-primary">
+                <?php echo esc_html__( 'Setup Database Now', 'mix-match-bundle' ); ?>
+            </a>
+        </p>
+    </div>
+    <?php endif; ?>
     
     <div class="mmb-admin-container">
         <div class="mmb-bundles-list">
@@ -51,6 +85,12 @@ if ( ! defined( 'ABSPATH' ) ) {
                         <input type="text" id="mmb-product-search" placeholder="<?php echo esc_attr__( 'Search products...', 'mix-match-bundle' ); ?>">
                         <div id="mmb-products-list" class="mmb-products-list"></div>
                     </div>
+                </div>
+                
+                <div class="mmb-form-group" id="mmb-selected-products-group" style="display: none;">
+                    <label><?php echo esc_html__( 'Selected Products (Drag to Reorder)', 'mix-match-bundle' ); ?></label>
+                    <p class="description"><?php echo esc_html__( 'Products will appear on the frontend in this order. Drag to rearrange.', 'mix-match-bundle' ); ?></p>
+                    <div id="mmb-selected-products-list" class="mmb-selected-products-list"></div>
                 </div>
                 
                 <div class="mmb-form-group">
