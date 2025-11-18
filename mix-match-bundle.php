@@ -166,6 +166,7 @@ function mmb_check_woocommerce_dependency() {
 class Mix_Match_Bundle {
     
     private static $instance = null;
+    private $frontend_assets_forced = false;
     
     public static function get_instance() {
         if ( null === self::$instance ) {
@@ -281,6 +282,10 @@ class Mix_Match_Bundle {
     }
     
     public function enqueue_frontend_scripts() {
+        if ( ! $this->should_enqueue_frontend_assets() ) {
+            return;
+        }
+        
         wp_enqueue_style( 'mix-match-frontend', MMB_PLUGIN_URL . 'assets/css/frontend.css', [], MMB_VERSION );
         wp_enqueue_script( 'mix-match-frontend', MMB_PLUGIN_URL . 'assets/js/frontend.js', [], MMB_VERSION, true );
         
@@ -289,6 +294,72 @@ class Mix_Match_Bundle {
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'cart_url' => wc_get_cart_url(),
         ]);
+    }
+
+    /**
+     * Allow developers to explicitly request frontend assets.
+     * Useful when the shortcode is rendered outside standard content areas.
+     */
+    public function force_frontend_assets() {
+        $this->frontend_assets_forced = true;
+    }
+    
+    /**
+     * Determine whether frontend assets should be loaded on the current request.
+     */
+    private function should_enqueue_frontend_assets() {
+        if ( is_admin() ) {
+            return false;
+        }
+        
+        $should_load = false;
+        
+        if ( $this->frontend_assets_forced ) {
+            $should_load = true;
+        } elseif ( $this->current_view_has_shortcode() ) {
+            $should_load = true;
+        }
+        
+        /**
+         * Filter whether Mix & Match should enqueue frontend assets.
+         *
+         * @param bool $should_load Whether assets should be loaded.
+         */
+        return apply_filters( 'mmb_should_enqueue_frontend_assets', $should_load );
+    }
+    
+    /**
+     * Check if the current page content contains the Mix & Match shortcode.
+     */
+    private function current_view_has_shortcode() {
+        if ( is_singular() ) {
+            global $post;
+            if ( $this->post_contains_bundle_shortcode( $post ) ) {
+                return true;
+            }
+        }
+        
+        if ( is_home() || is_front_page() || is_archive() ) {
+            global $posts;
+            if ( ! empty( $posts ) ) {
+                foreach ( $posts as $post ) {
+                    if ( $this->post_contains_bundle_shortcode( $post ) ) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Helper to check if a post has the [mmb_bundle] shortcode.
+     *
+     * @param WP_Post|null $post
+     */
+    private function post_contains_bundle_shortcode( $post ) {
+        return ( $post instanceof WP_Post ) && has_shortcode( $post->post_content, 'mmb_bundle' );
     }
     
     private function maybe_upgrade_database() {

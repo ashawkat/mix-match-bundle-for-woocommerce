@@ -8,7 +8,7 @@
 
 > **Create customizable product bundles with tiered quantity discounts. Increase AOV with a beautiful bundle builder and real-time discount calculations.**
 
-![Mix & Match Bundle](https://betatech.co/assets/mix-match-bundle-banner.png)
+![Mix & Match Bundle](https://demo.betatech.co/wp-content/uploads/2025/11/Banner-1.jpg)
 
 ---
 
@@ -18,7 +18,7 @@
 - [Demo](#-demo)
 - [Installation](#-installation)
 - [Usage](#-usage)
-- [Screenshots](#-screenshots)
+<!-- - [Screenshots](#-screenshots) -->
 - [Configuration](#-configuration)
 - [Translation](#-translation)
 - [Development](#-development)
@@ -146,7 +146,7 @@ if ( function_exists( 'mmb_display_bundle' ) ) {
 
 ---
 
-## 📸 Screenshots
+<!-- ## 📸 Screenshots
 
 ### Admin Interface
 
@@ -171,7 +171,7 @@ if ( function_exists( 'mmb_display_bundle' ) ) {
 ![Mobile Bundle](https://betatech.co/assets/screenshots/frontend-mobile.png)
 
 **Progress Indicators**
-![Discount Progress](https://betatech.co/assets/screenshots/progress-display.png)
+![Discount Progress](https://betatech.co/assets/screenshots/progress-display.png) -->
 
 ---
 
