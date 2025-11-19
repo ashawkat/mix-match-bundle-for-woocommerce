@@ -9,18 +9,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Check database status
 global $wpdb;
-$table_name = $wpdb->prefix . 'mmb_bundles';
-$table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
+require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+$table_name   = function_exists( 'mmb_get_table_name' ) ? mmb_get_table_name() : $wpdb->prefix . 'mmb_bundles';
+$previous_err = $wpdb->last_error;
+dbDelta( mmb_get_table_schema_sql() );
+$table_exists = empty( $wpdb->last_error ) || $wpdb->last_error === $previous_err;
 
 // Handle manual setup request
 if ( isset( $_GET['mmb_setup_db'] ) && check_admin_referer( 'mmb_setup_db' ) ) {
     $plugin_instance = Mix_Match_Bundle::get_instance();
+    $previous_err    = $wpdb->last_error;
     $plugin_instance->activate_plugin();
     
-    // Re-check if table was created
-    $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
+    $had_error   = ! empty( $wpdb->last_error ) && $wpdb->last_error !== $previous_err;
+    $table_exists = ! $had_error;
     
-    if ( $table_exists ) {
+    if ( ! $had_error ) {
         echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Database table created successfully!', 'mix-match-bundle' ) . '</p></div>';
     } else {
         echo '<div class="notice notice-error is-dismissible"><p>' . esc_html__( 'Failed to create database table. Please check your database permissions.', 'mix-match-bundle' ) . '</p></div>';

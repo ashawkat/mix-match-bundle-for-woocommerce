@@ -61,32 +61,34 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             
             <div class="mmb-products-grid">
-                <?php foreach ( $products as $product ) : 
+                <?php foreach ( $products as $product ) :
                     $is_variable = $product->is_type( 'variable' );
                     $variations = $is_variable ? $product->get_available_variations() : [];
                 ?>
                     <div class="mmb-product-card" 
                          data-product-id="<?php echo intval( $product->get_id() ); ?>" 
-                         data-is-variable="<?php echo $is_variable ? '1' : '0'; ?>"
+                         data-is-variable="<?php echo esc_attr( $is_variable ? '1' : '0' ); ?>"
                          data-price="<?php echo esc_attr( $product->get_price() ); ?>">
                         <div class="mmb-product-image">
-                            <?php echo $product->get_image( 'medium' ); ?>
+                            <?php echo wp_kses_post( $product->get_image( 'medium' ) ); ?>
                         </div>
                         <div class="mmb-product-info">
                             <h4><a href="<?php echo esc_url( get_permalink( $product->get_id() ) ); ?>" target="_blank" class="mmb-product-link"><?php echo esc_html( $product->get_name() ); ?></a></h4>
                             <p class="mmb-product-price" data-base-price="<?php echo esc_attr( $product->get_price() ); ?>">
                                 <?php 
+                                $price_html = '';
                                 if ( $is_variable ) {
                                     $min_price = $product->get_variation_price( 'min' );
                                     $max_price = $product->get_variation_price( 'max' );
                                     if ( $min_price !== $max_price ) {
-                                        echo wc_price( $min_price ) . ' - ' . wc_price( $max_price );
+                                        $price_html = wc_price( $min_price ) . ' - ' . wc_price( $max_price );
                                     } else {
-                                        echo wc_price( $min_price );
+                                        $price_html = wc_price( $min_price );
                                     }
                                 } else {
-                                    echo wc_price( $product->get_price() );
+                                    $price_html = wc_price( $product->get_price() );
                                 }
+                                echo wp_kses_post( $price_html );
                                 ?>
                             </p>
                             
@@ -109,7 +111,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                                 value="<?php echo esc_attr( $variation['variation_id'] ); ?>" 
                                                 data-price="<?php echo esc_attr( $variation_obj->get_price() ); ?>"
                                                 data-image="<?php echo esc_url( $variation['image']['url'] ?? '' ); ?>">
-                                                <?php echo esc_html( $variation_name ); ?> - <?php echo wc_price( $variation_obj->get_price() ); ?>
+                                                <?php echo esc_html( $variation_name ); ?> - <?php echo wp_kses_post( wc_price( $variation_obj->get_price() ) ); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -213,12 +215,16 @@ if ( ! defined( 'ABSPATH' ) ) {
                     $first_tier = $bundle['discount_tiers'][0];
                     $tier_qty = intval( $first_tier['quantity'] );
                     $tier_discount = floatval( $first_tier['discount'] );
-                    echo esc_html( sprintf( 
-                        __( 'Add %1$d %2$s to get %3$s%% OFF', 'mix-match-bundle' ),
-                        $tier_qty,
-                        _n( 'item', 'items', $tier_qty, 'mix-match-bundle' ),
-                        $tier_discount
-                    ) );
+                    /* translators: 1: quantity required, 2: pluralized label, 3: discount percentage */
+                    $first_tier_text = __( 'Add %1$d %2$s to get %3$s%% OFF', 'mix-match-bundle' );
+                    echo esc_html(
+                        sprintf(
+                            $first_tier_text,
+                            $tier_qty,
+                            _n( 'item', 'items', $tier_qty, 'mix-match-bundle' ),
+                            $tier_discount
+                        )
+                    );
                 } else {
                     echo esc_html__( 'Select items to see your discount', 'mix-match-bundle' );
                 }

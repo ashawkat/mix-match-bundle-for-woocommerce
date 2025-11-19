@@ -26,90 +26,110 @@ define( 'MMB_VERSION', '1.0.0' );
 define( 'MMB_DB_VERSION', '2.1' ); // Database version for schema updates
 
 /**
+ * Get the fully-qualified bundles table name.
+ *
+ * @since 2.1
+ *
+ * @return string
+ */
+function mmb_get_table_name() {
+    global $wpdb;
+
+    $raw_name = $wpdb->prefix . 'mmb_bundles';
+    $sanitized = preg_replace( '/[^A-Za-z0-9_]/', '', $raw_name );
+
+    return $sanitized ?: $raw_name;
+}
+
+/**
+ * Returns the SQL statement used for dbDelta to manage the bundles table.
+ *
+ * @since 2.1
+ *
+ * @return string
+ */
+function mmb_get_table_schema_sql() {
+    global $wpdb;
+
+    $table_name      = mmb_get_table_name();
+    $charset_collate = $wpdb->get_charset_collate();
+
+    return "CREATE TABLE {$table_name} (
+        id mediumint(9) NOT NULL AUTO_INCREMENT,
+        name varchar(255) NOT NULL,
+        description longtext,
+        enabled tinyint(1) DEFAULT 1,
+        use_quantity tinyint(1) DEFAULT 0,
+        max_quantity int DEFAULT 10,
+        discount_tiers longtext,
+        product_ids longtext,
+        heading_text varchar(255) DEFAULT 'Select Your Products Below',
+        hint_text varchar(255) DEFAULT 'Bundle 2, 3, 4 or 5 items and watch the savings grow.',
+        primary_color varchar(7) DEFAULT '#4caf50',
+        accent_color varchar(7) DEFAULT '#45a049',
+        hover_bg_color varchar(7) DEFAULT '#388e3c',
+        hover_accent_color varchar(7) DEFAULT '#2e7d32',
+        button_text_color varchar(7) DEFAULT '#ffffff',
+        button_text varchar(255) DEFAULT 'Add Bundle to Cart',
+        progress_text varchar(255) DEFAULT 'Your Savings Progress',
+        cart_behavior varchar(20) DEFAULT 'sidecart',
+        show_bundle_title tinyint(1) DEFAULT 1,
+        show_bundle_description tinyint(1) DEFAULT 1,
+        show_heading_text tinyint(1) DEFAULT 1,
+        show_hint_text tinyint(1) DEFAULT 1,
+        show_progress_text tinyint(1) DEFAULT 1,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        primary key (id)
+    ) {$charset_collate};";
+}
+
+/**
  * Check and upgrade database if needed
  * Runs on every admin page load to ensure database is up to date
  *
  * @since 2.1
  */
 function mmb_check_database_upgrade() {
-    // Only check in admin area
     if ( ! is_admin() ) {
         return;
     }
-    
+
     global $wpdb;
-    $table_name = $wpdb->prefix . 'mmb_bundles';
-    
-    // Get current database version
+
     $current_db_version = get_option( 'mmb_db_version', '1.0' );
-    
-    // Check if upgrade is needed
+
     if ( version_compare( $current_db_version, MMB_DB_VERSION, '<' ) ) {
-        error_log( 'MMB: Database upgrade needed from ' . $current_db_version . ' to ' . MMB_DB_VERSION );
-        
-        // Check if table exists first
-        $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
-        if ( ! $table_exists ) {
-            error_log( 'MMB: Table does not exist, skipping upgrade check' );
-            return;
-        }
-        
-        // Version 2.1 upgrade: Add max_quantity column
-        if ( version_compare( $current_db_version, '2.1', '<' ) ) {
-            // Check if column already exists
-            $column_exists = $wpdb->get_results( "SHOW COLUMNS FROM {$table_name} LIKE 'max_quantity'" );
-            
-            if ( empty( $column_exists ) ) {
-                error_log( 'MMB: Adding max_quantity column to database' );
-                
-                // Add the column
-                $result = $wpdb->query( 
-                    "ALTER TABLE {$table_name} 
-                     ADD COLUMN max_quantity int DEFAULT 10 
-                     AFTER use_quantity" 
-                );
-                
-                if ( $result !== false ) {
-                    error_log( 'MMB: Successfully added max_quantity column' );
-                    
-                    // Show admin notice
-                    add_action( 'admin_notices', function() {
-                        ?>
-                        <div class="notice notice-success is-dismissible">
-                            <p>
-                                <strong><?php echo esc_html__( 'Mix & Match Bundle:', 'mix-match-bundle' ); ?></strong>
-                                <?php echo esc_html__( 'Database updated successfully! New "Maximum Quantity" feature is now available.', 'mix-match-bundle' ); ?>
-                            </p>
-                        </div>
-                        <?php
-                    });
-                } else {
-                    error_log( 'MMB: Failed to add max_quantity column: ' . $wpdb->last_error );
-                    
-                    // Show error notice
-                    add_action( 'admin_notices', function() use ( $wpdb ) {
-                        ?>
-                        <div class="notice notice-error">
-                            <p>
-                                <strong><?php echo esc_html__( 'Mix & Match Bundle:', 'mix-match-bundle' ); ?></strong>
-                                <?php echo esc_html__( 'Database update failed. Please check error logs or contact support.', 'mix-match-bundle' ); ?>
-                            </p>
-                            <?php if ( current_user_can( 'manage_options' ) ) : ?>
-                                <p><code><?php echo esc_html( $wpdb->last_error ); ?></code></p>
-                            <?php endif; ?>
-                        </div>
-                        <?php
-                    });
-                    return;
-                }
-            } else {
-                error_log( 'MMB: max_quantity column already exists' );
-            }
-        }
-        
-        // Update the database version
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        $previous_error = $wpdb->last_error;
+        $schema_sql     = mmb_get_table_schema_sql();
+        dbDelta( $schema_sql );
+        $had_error      = ! empty( $wpdb->last_error ) && $wpdb->last_error !== $previous_error;
+
         update_option( 'mmb_db_version', MMB_DB_VERSION );
-        error_log( 'MMB: Database version updated to ' . MMB_DB_VERSION );
+
+        if ( current_user_can( 'manage_options' ) ) {
+            add_action(
+                'admin_notices',
+                function () use ( $had_error ) {
+                    ?>
+                    <div class="notice notice-<?php echo $had_error ? 'error' : 'success'; ?> <?php echo $had_error ? '' : 'is-dismissible'; ?>">
+                        <p>
+                            <strong><?php echo esc_html__( 'Mix & Match Bundle:', 'mix-match-bundle' ); ?></strong>
+                            <?php
+                            if ( $had_error ) {
+                                echo esc_html__( 'Database update encountered an issue. Please review the debug log for details.', 'mix-match-bundle' );
+                            } else {
+                                echo esc_html__( 'Database schema verified successfully.', 'mix-match-bundle' );
+                            }
+                            ?>
+                        </p>
+                    </div>
+                    <?php
+                }
+            );
+        }
     }
 }
 add_action( 'admin_init', 'mmb_check_database_upgrade' );
@@ -204,21 +224,11 @@ class Mix_Match_Bundle {
         // Frontend hooks
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_frontend_scripts' ] );
         
-        // Internationalization
-        add_action( 'init', [ $this, 'load_textdomain' ] );
-        
         // Database setup
         register_activation_hook( __FILE__, [ $this, 'activate_plugin' ] );
         
         // HPOS Compatibility
         add_action( 'before_woocommerce_init', [ $this, 'declare_hpos_compatibility' ] );
-    }
-    
-    /**
-     * Load plugin textdomain for translations
-     */
-    public function load_textdomain() {
-        load_plugin_textdomain( 'mix-match-bundle', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
     }
     
     /**
@@ -295,7 +305,7 @@ class Mix_Match_Bundle {
             'cart_url' => wc_get_cart_url(),
         ]);
     }
-
+    
     /**
      * Allow developers to explicitly request frontend assets.
      * Useful when the shortcode is rendered outside standard content areas.
@@ -364,285 +374,24 @@ class Mix_Match_Bundle {
     
     private function maybe_upgrade_database() {
         try {
-            global $wpdb;
-            $table_name = $wpdb->prefix . 'mmb_bundles';
-            
-            // Check if table exists first
-            $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" );
-            if ( ! $table_exists ) {
-                return;
-            }
-        
-        // Check and add use_quantity column
-        $column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'use_quantity'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN use_quantity tinyint(1) DEFAULT 0 AFTER enabled" );
-        }
-        
-        // Check and add heading_text column
-        $heading_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'heading_text'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $heading_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN heading_text varchar(255) DEFAULT 'Select Your Products Below' AFTER product_ids" );
-        }
-        
-        // Check and add hint_text column
-        $hint_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'hint_text'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $hint_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN hint_text varchar(255) DEFAULT 'Bundle 2, 3, 4 or 5 items and watch the savings grow.' AFTER heading_text" );
-        }
-        
-        // Check and add primary_color column
-        $color_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'primary_color'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $color_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN primary_color varchar(7) DEFAULT '#4caf50' AFTER hint_text" );
-        }
-        
-        // Check and add button_text column
-        $button_text_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'button_text'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $button_text_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN button_text varchar(255) DEFAULT 'Add Bundle to Cart' AFTER primary_color" );
-        }
-        
-        // Check and add progress_text column
-        $progress_text_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'progress_text'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $progress_text_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN progress_text varchar(255) DEFAULT 'Your Savings Progress' AFTER button_text" );
-        }
-        
-        // Check and add cart_behavior column
-        $cart_behavior_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'cart_behavior'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $cart_behavior_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN cart_behavior varchar(20) DEFAULT 'sidecart' AFTER progress_text" );
-        }
-        
-        // Check and add accent_color column
-        $accent_color_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'accent_color'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $accent_color_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN accent_color varchar(7) DEFAULT '#45a049' AFTER primary_color" );
-        }
-        
-        // Check and add hover_bg_color column
-        $hover_bg_color_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'hover_bg_color'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $hover_bg_color_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN hover_bg_color varchar(7) DEFAULT '#388e3c' AFTER accent_color" );
-        }
-        
-        // Check and add hover_accent_color column
-        $hover_accent_color_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'hover_accent_color'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $hover_accent_color_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN hover_accent_color varchar(7) DEFAULT '#2e7d32' AFTER hover_bg_color" );
-        }
-        
-        // Check and add button_text_color column
-        $button_text_color_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'button_text_color'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $button_text_color_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN button_text_color varchar(7) DEFAULT '#ffffff' AFTER hover_accent_color" );
-        }
-        
-        // Check and add show/hide columns
-        $show_columns = [
-            'show_bundle_title' => 1,
-            'show_bundle_description' => 1,
-            'show_heading_text' => 1,
-            'show_hint_text' => 1,
-            'show_progress_text' => 1
-        ];
-        
-        foreach ( $show_columns as $column_name => $default_value ) {
-            $column_exists = $wpdb->get_results( 
-                $wpdb->prepare(
-                    "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                    WHERE table_schema = %s 
-                    AND table_name = %s 
-                    AND column_name = %s",
-                    DB_NAME,
-                    $table_name,
-                    $column_name
-                )
-            );
-            
-            if ( empty( $column_exists ) ) {
-                $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN {$column_name} tinyint(1) DEFAULT {$default_value} AFTER cart_behavior" );
-            }
-        }
-        
-        // Check and add max_quantity column (v2.1)
-        $max_qty_column_exists = $wpdb->get_results( 
-            $wpdb->prepare(
-                "SELECT * FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE table_schema = %s 
-                AND table_name = %s 
-                AND column_name = 'max_quantity'",
-                DB_NAME,
-                $table_name
-            )
-        );
-        
-        if ( empty( $max_qty_column_exists ) ) {
-            $wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN max_quantity int DEFAULT 10 AFTER use_quantity" );
-            error_log( 'MMB: Added max_quantity column during activation/upgrade' );
-        }
-        
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            dbDelta( mmb_get_table_schema_sql() );
         } catch ( Exception $e ) {
-            // Log error but don't break the site
-            error_log( 'MMB Database Upgrade Error: ' . $e->getMessage() );
+            // Silent fail to avoid breaking activation.
         }
     }
     
     public function activate_plugin() {
-        global $wpdb;
-        
-        $charset_collate = $wpdb->get_charset_collate();
-        $table_name = $wpdb->prefix . 'mmb_bundles';
-        
-        $sql = "CREATE TABLE IF NOT EXISTS {$table_name} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            name varchar(255) NOT NULL,
-            description longtext,
-            enabled tinyint(1) DEFAULT 1,
-            use_quantity tinyint(1) DEFAULT 0,
-            max_quantity int DEFAULT 10,
-            discount_tiers longtext,
-            product_ids longtext,
-            heading_text varchar(255) DEFAULT 'Select Your Products Below',
-            hint_text varchar(255) DEFAULT 'Bundle 2, 3, 4 or 5 items and watch the savings grow.',
-            primary_color varchar(7) DEFAULT '#4caf50',
-            accent_color varchar(7) DEFAULT '#45a049',
-            hover_bg_color varchar(7) DEFAULT '#388e3c',
-            hover_accent_color varchar(7) DEFAULT '#2e7d32',
-            button_text_color varchar(7) DEFAULT '#ffffff',
-            button_text varchar(255) DEFAULT 'Add Bundle to Cart',
-            progress_text varchar(255) DEFAULT 'Your Savings Progress',
-            cart_behavior varchar(20) DEFAULT 'sidecart',
-            show_bundle_title tinyint(1) DEFAULT 1,
-            show_bundle_description tinyint(1) DEFAULT 1,
-            show_heading_text tinyint(1) DEFAULT 1,
-            show_hint_text tinyint(1) DEFAULT 1,
-            show_progress_text tinyint(1) DEFAULT 1,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
-        ) $charset_collate;";
-        
-        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-        dbDelta( $sql );
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        dbDelta( mmb_get_table_schema_sql() );
         
         // Run upgrade check
         $this->maybe_upgrade_database();
         
         // Set initial database version
         update_option( 'mmb_db_version', MMB_DB_VERSION );
-        error_log( 'MMB: Plugin activated, database version set to ' . MMB_DB_VERSION );
+
+        flush_rewrite_rules();
     }
 }
 
@@ -669,13 +418,9 @@ function mmb_save_bundle() {
     }
     
     // Debug: Log what PHP receives
-    error_log( '=== mmb_save_bundle - RAW $_POST ===' );
-    error_log( 'product_ids from POST: ' . ( isset( $_POST['product_ids'] ) ? $_POST['product_ids'] : 'NOT SET' ) );
-    error_log( 'discount_tiers from POST: ' . ( isset( $_POST['discount_tiers'] ) ? $_POST['discount_tiers'] : 'NOT SET' ) );
-    error_log( 'Full $_POST: ' . print_r( $_POST, true ) );
     
     $bundle_manager = new MMB_Bundle_Manager();
-    $result = $bundle_manager->save_bundle( $_POST );
+    $result = $bundle_manager->save_bundle( wp_unslash( $_POST ) );
     
     if ( $result ) {
         wp_send_json_success( $result );
@@ -683,7 +428,6 @@ function mmb_save_bundle() {
         // Return detailed error message
         global $wpdb;
         $error_message = $wpdb->last_error ? $wpdb->last_error : __( 'Failed to save bundle', 'mix-match-bundle' );
-        error_log( 'Save bundle failed with error: ' . $error_message );
         wp_send_json_error( $error_message );
     }
 }
@@ -699,10 +443,7 @@ function mmb_get_bundles() {
     $bundles = $bundle_manager->get_all_bundles();
     
     // Debug: Log what we're sending
-    error_log( '=== mmb_get_bundles AJAX ===' );
-    error_log( 'Sending ' . count( $bundles ) . ' bundles' );
     foreach ( $bundles as $bundle ) {
-        error_log( 'Bundle ID ' . $bundle['id'] . ' - discount_tiers: ' . print_r( $bundle['discount_tiers'], true ) );
     }
     
     wp_send_json_success( $bundles );
@@ -715,7 +456,7 @@ function mmb_delete_bundle() {
         wp_send_json_error( __( 'Unauthorized', 'mix-match-bundle' ) );
     }
     
-    $bundle_id = isset( $_POST['bundle_id'] ) ? intval( $_POST['bundle_id'] ) : 0;
+    $bundle_id = isset( $_POST['bundle_id'] ) ? intval( wp_unslash( $_POST['bundle_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     
     if ( ! $bundle_id ) {
         wp_send_json_error( __( 'Invalid bundle ID', 'mix-match-bundle' ) );
@@ -733,31 +474,24 @@ function mmb_update_bundle_items() {
     check_ajax_referer( 'mmb_frontend_nonce', 'nonce' );
     
     // Debug logging
-    error_log( '=== mmb_update_bundle_items Called ===' );
-    error_log( 'POST data: ' . print_r( $_POST, true ) );
     
-    $bundle_id = isset( $_POST['bundle_id'] ) ? intval( $_POST['bundle_id'] ) : 0;
-    $product_ids_raw = isset( $_POST['product_ids'] ) ? $_POST['product_ids'] : '';
+    $bundle_id = isset( $_POST['bundle_id'] ) ? intval( wp_unslash( $_POST['bundle_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $product_ids_raw = isset( $_POST['product_ids'] ) ? sanitize_textarea_field( wp_unslash( $_POST['product_ids'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     
     // Parse product_ids if it's JSON
     if ( is_string( $product_ids_raw ) ) {
         // Remove escaping that URLSearchParams adds
-        $product_ids_clean = stripslashes( $product_ids_raw );
-        error_log( 'Product IDs (cleaned): ' . $product_ids_clean );
+        $product_ids_clean = wp_unslash( $product_ids_raw );
         $product_ids = json_decode( $product_ids_clean, true );
     } else {
         $product_ids = (array) $product_ids_raw;
     }
     
-    error_log( 'Bundle ID: ' . $bundle_id );
-    error_log( 'Product IDs (parsed): ' . print_r( $product_ids, true ) );
     
     if ( json_last_error() !== JSON_ERROR_NONE ) {
-        error_log( 'JSON Decode Error: ' . json_last_error_msg() );
     }
     
     if ( ! $bundle_id || empty( $product_ids ) ) {
-        error_log( 'ERROR: Invalid data in mmb_update_bundle_items' );
         wp_send_json_error( __( 'Invalid data', 'mix-match-bundle' ) );
     }
     
@@ -816,10 +550,6 @@ function mmb_update_bundle_items() {
     ];
     
     // Debug logging
-    error_log( '=== mmb_update_bundle_items Response ===' );
-    error_log( 'Products count: ' . count( $products_data ) );
-    error_log( 'Products data: ' . print_r( $products_data, true ) );
-    error_log( 'Full response: ' . print_r( $response_data, true ) );
     
     wp_send_json_success( $response_data );
 }
@@ -831,7 +561,7 @@ function mmb_search_products() {
         wp_send_json_error( __( 'Unauthorized', 'mix-match-bundle' ) );
     }
     
-    $search = isset( $_POST['search'] ) ? sanitize_text_field( $_POST['search'] ) : '';
+    $search = isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     
     $args = [
         'post_type' => 'product',
@@ -864,22 +594,16 @@ function mmb_search_products() {
 function mmb_add_bundle_to_cart() {
     check_ajax_referer( 'mmb_frontend_nonce', 'nonce' );
     
-    $bundle_id = isset( $_POST['bundle_id'] ) ? intval( $_POST['bundle_id'] ) : 0;
-    $bundle_items_json = isset( $_POST['bundle_items'] ) ? $_POST['bundle_items'] : '';
-    $discount_amount = isset( $_POST['discount_amount'] ) ? floatval( $_POST['discount_amount'] ) : 0;
+    $bundle_id = isset( $_POST['bundle_id'] ) ? intval( wp_unslash( $_POST['bundle_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $bundle_items_json = isset( $_POST['bundle_items'] ) ? sanitize_textarea_field( wp_unslash( $_POST['bundle_items'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $discount_amount = isset( $_POST['discount_amount'] ) ? floatval( wp_unslash( $_POST['discount_amount'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     
     // Debug logging
-    error_log( '=== mmb_add_bundle_to_cart ===' );
-    error_log( 'Bundle ID: ' . $bundle_id );
-    error_log( 'Bundle Items JSON (raw): ' . $bundle_items_json );
-    error_log( 'Discount Amount: ' . $discount_amount );
     
     // Parse bundle items
-    $bundle_items = json_decode( stripslashes( $bundle_items_json ), true );
-    error_log( 'Bundle Items (decoded): ' . print_r( $bundle_items, true ) );
+    $bundle_items = json_decode( $bundle_items_json, true );
     
     if ( ! $bundle_id || empty( $bundle_items ) ) {
-        error_log( 'ERROR: Invalid data - bundle_id: ' . $bundle_id . ', items count: ' . count( (array) $bundle_items ) );
         wp_send_json_error( __( 'Invalid data', 'mix-match-bundle' ) );
     }
     
@@ -915,9 +639,9 @@ function mmb_wc_ajax_add_to_cart() {
         wp_send_json_error( __( 'WooCommerce not available', 'mix-match-bundle' ) );
     }
     
-    $product_id = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
-    $variation_id = isset( $_POST['variation_id'] ) ? absint( $_POST['variation_id'] ) : 0;
-    $quantity = isset( $_POST['quantity'] ) ? absint( $_POST['quantity'] ) : 1;
+    $product_id = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $variation_id = isset( $_POST['variation_id'] ) ? absint( wp_unslash( $_POST['variation_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $quantity = isset( $_POST['quantity'] ) ? absint( wp_unslash( $_POST['quantity'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     
     if ( $product_id < 1 ) {
         wp_send_json_error( __( 'Invalid product ID', 'mix-match-bundle' ) );
@@ -972,3 +696,4 @@ function mmb_init_plugin() {
 
 // Hook into plugins_loaded to ensure WooCommerce is loaded first
 add_action( 'plugins_loaded', 'mmb_init_plugin', 20 );
+

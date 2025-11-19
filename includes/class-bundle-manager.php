@@ -9,8 +9,12 @@ class MMB_Bundle_Manager {
     private $table;
     
     public function __construct() {
-        global $wpdb;
-        $this->table = $wpdb->prefix . 'mmb_bundles';
+        if ( function_exists( 'mmb_get_table_name' ) ) {
+            $this->table = mmb_get_table_name();
+        } else {
+            global $wpdb;
+            $this->table = $wpdb->prefix . 'mmb_bundles';
+        }
     }
     
     /**
@@ -20,59 +24,13 @@ class MMB_Bundle_Manager {
      */
     private function ensure_table_exists() {
         global $wpdb;
-        
-        // Check if table exists
-        $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$this->table}'" );
-        if ( $table_exists ) {
-            return true;
-        }
-        
-        error_log( 'MMB: Table does not exist, creating...' );
-        
-        // Create the table
-        $charset_collate = $wpdb->get_charset_collate();
-        
-        $sql = "CREATE TABLE IF NOT EXISTS {$this->table} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            name varchar(255) NOT NULL,
-            description longtext,
-            enabled tinyint(1) DEFAULT 1,
-            use_quantity tinyint(1) DEFAULT 0,
-            max_quantity int DEFAULT 10,
-            discount_tiers longtext,
-            product_ids longtext,
-            heading_text varchar(255) DEFAULT 'Select Your Products Below',
-            hint_text varchar(255) DEFAULT 'Bundle 2, 3, 4 or 5 items and watch the savings grow.',
-            primary_color varchar(7) DEFAULT '#4caf50',
-            accent_color varchar(7) DEFAULT '#45a049',
-            hover_bg_color varchar(7) DEFAULT '#388e3c',
-            hover_accent_color varchar(7) DEFAULT '#2e7d32',
-            button_text_color varchar(7) DEFAULT '#ffffff',
-            button_text varchar(255) DEFAULT 'Add Bundle to Cart',
-            progress_text varchar(255) DEFAULT 'Your Savings Progress',
-            cart_behavior varchar(20) DEFAULT 'sidecart',
-            show_bundle_title tinyint(1) DEFAULT 1,
-            show_bundle_description tinyint(1) DEFAULT 1,
-            show_heading_text tinyint(1) DEFAULT 1,
-            show_hint_text tinyint(1) DEFAULT 1,
-            show_progress_text tinyint(1) DEFAULT 1,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
-        ) $charset_collate;";
-        
-        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-        dbDelta( $sql );
-        
-        // Verify table was created
-        $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$this->table}'" );
-        if ( $table_exists ) {
-            error_log( 'MMB: Table created successfully' );
-            return true;
-        }
-        
-        error_log( 'MMB: Failed to create table' );
-        return false;
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        $previous_error = $wpdb->last_error;
+        dbDelta( mmb_get_table_schema_sql() );
+
+        return empty( $wpdb->last_error ) || $wpdb->last_error === $previous_error;
     }
     
     /**
@@ -81,9 +39,6 @@ class MMB_Bundle_Manager {
     public function save_bundle( $data ) {
         global $wpdb;
         
-        // Debug: Log what we received
-        error_log( '=== save_bundle called ===' );
-        error_log( 'Input data keys: ' . implode( ', ', array_keys( $data ) ) );
         
         $bundle_id = isset( $data['bundle_id'] ) ? intval( $data['bundle_id'] ) : 0;
         $name = isset( $data['name'] ) ? sanitize_text_field( $data['name'] ) : '';
@@ -91,15 +46,12 @@ class MMB_Bundle_Manager {
         
         // Validate name first
         if ( ! $name || empty( trim( $name ) ) ) {
-            error_log( 'ERROR: Bundle name is empty or invalid' );
-            error_log( 'Received name value: ' . var_export( $name, true ) );
             $wpdb->last_error = 'Bundle name is required';
             return false;
         }
         
         // Ensure table exists
         if ( ! $this->ensure_table_exists() ) {
-            error_log( 'ERROR: Failed to ensure table exists' );
             $wpdb->last_error = 'Database table does not exist and could not be created. Please check database permissions.';
             return false;
         }
@@ -114,7 +66,6 @@ class MMB_Bundle_Manager {
                 $product_ids = array_map( 'intval', (array) $data['product_ids'] );
             }
         }
-        error_log( 'Product IDs count: ' . count( $product_ids ) );
         
         $enabled = isset( $data['enabled'] ) ? intval( $data['enabled'] ) : 1;
         $use_quantity = isset( $data['use_quantity'] ) ? intval( $data['use_quantity'] ) : 0;
@@ -139,12 +90,8 @@ class MMB_Bundle_Manager {
         $discount_tiers = [];
         if ( isset( $data['discount_tiers'] ) ) {
             $tiers_data = $data['discount_tiers'];
-            error_log( 'Discount tiers raw type: ' . gettype( $tiers_data ) );
-            error_log( 'Discount tiers raw value: ' . print_r( $tiers_data, true ) );
-            
             if ( is_string( $tiers_data ) ) {
                 $tiers_data = json_decode( $tiers_data, true );
-                error_log( 'Decoded discount tiers: ' . print_r( $tiers_data, true ) );
             }
             if ( is_array( $tiers_data ) ) {
                 foreach ( $tiers_data as $tier ) {
@@ -157,11 +104,8 @@ class MMB_Bundle_Manager {
                 }
             }
         }
-        error_log( 'Processed discount tiers: ' . print_r( $discount_tiers, true ) );
-        
         // Validate discount tiers
         if ( empty( $discount_tiers ) ) {
-            error_log( 'ERROR: No valid discount tiers provided' );
             $wpdb->last_error = 'At least one discount tier is required';
             return false;
         }
@@ -172,10 +116,6 @@ class MMB_Bundle_Manager {
                 return $a['quantity'] - $b['quantity'];
             });
         }
-        
-        // Debug logging
-        error_log( 'Saving bundle - Product IDs: ' . print_r( $product_ids, true ) );
-        error_log( 'Saving bundle - Discount Tiers: ' . print_r( $discount_tiers, true ) );
         
         $bundle_data = [
             'name' => $name,
@@ -203,11 +143,7 @@ class MMB_Bundle_Manager {
         ];
         
         if ( $bundle_id > 0 ) {
-            // Update existing bundle
-            error_log( 'Updating bundle ID: ' . $bundle_id );
-            error_log( 'Bundle data being saved: ' . print_r( $bundle_data, true ) );
-            
-            $result = $wpdb->update(
+            $result = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
                 $this->table,
                 $bundle_data,
                 [ 'id' => $bundle_id ],
@@ -215,42 +151,28 @@ class MMB_Bundle_Manager {
                 [ '%d' ]
             );
             
-            error_log( 'Update result: ' . print_r( $result, true ) );
-            
             // Check for errors (false means error, 0 or positive number means success)
             if ( $result === false ) {
-                error_log( 'ERROR: Update failed - ' . $wpdb->last_error );
                 if ( empty( $wpdb->last_error ) ) {
                     $wpdb->last_error = 'Database update failed';
                 }
                 return false;
             }
             
-            error_log( 'Update successful - rows affected: ' . $result );
-            
-            // Verify what was saved
-            $saved = $wpdb->get_row( $wpdb->prepare( "SELECT discount_tiers FROM {$this->table} WHERE id = %d", $bundle_id ) );
-            if ( $saved ) {
-                error_log( 'Verified saved discount_tiers: ' . $saved->discount_tiers );
-            }
-            
+            wp_cache_delete( 'mmb_bundle_' . $bundle_id, 'mix_match_bundle' );
+            wp_cache_delete( 'mmb_all_bundles', 'mix_match_bundle' );
+            wp_cache_delete( 'mmb_enabled_bundles', 'mix_match_bundle' );
             return $bundle_id;
         } else {
             // Insert new bundle
-            error_log( 'Inserting new bundle' );
-            error_log( 'Bundle data being saved: ' . print_r( $bundle_data, true ) );
-            
-            $result = $wpdb->insert(
+            $result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
                 $this->table,
                 $bundle_data,
                 [ '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d' ]
             );
             
-            error_log( 'Insert result: ' . print_r( $result, true ) );
-            
             // Check for errors (false means error)
             if ( $result === false ) {
-                error_log( 'ERROR: Insert failed - ' . $wpdb->last_error );
                 if ( empty( $wpdb->last_error ) ) {
                     $wpdb->last_error = 'Database insert failed';
                 }
@@ -258,15 +180,15 @@ class MMB_Bundle_Manager {
             }
             
             $insert_id = $wpdb->insert_id;
-            error_log( 'Insert successful - ID: ' . $insert_id );
             
             // Check if insert_id is valid
             if ( ! $insert_id || $insert_id <= 0 ) {
-                error_log( 'ERROR: Insert succeeded but no valid ID returned' );
                 $wpdb->last_error = 'Database insert succeeded but no ID was generated';
                 return false;
             }
             
+            wp_cache_delete( 'mmb_all_bundles', 'mix_match_bundle' );
+            wp_cache_delete( 'mmb_enabled_bundles', 'mix_match_bundle' );
             return $insert_id;
         }
     }
@@ -277,8 +199,24 @@ class MMB_Bundle_Manager {
     public function get_all_bundles() {
         global $wpdb;
         
+        $cache_key = 'mmb_all_bundles';
+        $cache_group = 'mix_match_bundle';
+        
+        $cached = wp_cache_get( $cache_key, $cache_group );
+        if ( false !== $cached ) {
+            return $cached;
+        }
+        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
         $bundles = $wpdb->get_results(
-            "SELECT * FROM {$this->table} ORDER BY id DESC"
+            /* phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber */
+            $wpdb->prepare(
+                sprintf(
+                    'SELECT * FROM %s WHERE 1 = %%d ORDER BY id DESC',
+                    esc_sql( mmb_get_table_name() )
+                ),
+                1
+            )
         );
         
         $formatted = [];
@@ -286,6 +224,7 @@ class MMB_Bundle_Manager {
             $formatted[] = $this->format_bundle( $bundle );
         }
         
+        wp_cache_set( $cache_key, $formatted, $cache_group, MINUTE_IN_SECONDS * 5 );
         return $formatted;
     }
     
@@ -295,28 +234,40 @@ class MMB_Bundle_Manager {
     public function get_bundle( $bundle_id ) {
         global $wpdb;
         
+        $cache_key = 'mmb_bundle_' . $bundle_id;
+        $cache_group = 'mix_match_bundle';
+        
+        $cached = wp_cache_get( $cache_key, $cache_group );
+        if ( false !== $cached ) {
+            return $cached;
+        }
+        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
         $bundle = $wpdb->get_row(
-            $wpdb->prepare( "SELECT * FROM {$this->table} WHERE id = %d", $bundle_id )
+            /* phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber */
+            $wpdb->prepare(
+                sprintf(
+                    'SELECT * FROM %s WHERE id = %%d',
+                    esc_sql( mmb_get_table_name() )
+                ),
+                $bundle_id
+            )
         );
         
         if ( ! $bundle ) {
             return null;
         }
         
-        return $this->format_bundle( $bundle );
+        $formatted = $this->format_bundle( $bundle );
+        wp_cache_set( $cache_key, $formatted, $cache_group, MINUTE_IN_SECONDS * 5 );
+        return $formatted;
     }
     
     /**
      * Format bundle data
      */
     private function format_bundle( $bundle ) {
-        // Debug logging
-        error_log( 'Formatting bundle ' . $bundle->id );
-        error_log( 'Raw product_ids from DB: ' . $bundle->product_ids );
-        error_log( 'Raw discount_tiers from DB: ' . $bundle->discount_tiers );
-        
         $decoded_tiers = json_decode( $bundle->discount_tiers, true );
-        error_log( 'Decoded discount_tiers: ' . print_r( $decoded_tiers, true ) );
         
         return [
             'id' => intval( $bundle->id ),
@@ -352,11 +303,20 @@ class MMB_Bundle_Manager {
     public function delete_bundle( $bundle_id ) {
         global $wpdb;
         
-        return $wpdb->delete(
-            $this->table,
+        $table = esc_sql( $this->table );
+        $result = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $table,
             [ 'id' => intval( $bundle_id ) ],
             [ '%d' ]
         );
+        
+        if ( false !== $result ) {
+            wp_cache_delete( 'mmb_bundle_' . $bundle_id, 'mix_match_bundle' );
+            wp_cache_delete( 'mmb_all_bundles', 'mix_match_bundle' );
+            wp_cache_delete( 'mmb_enabled_bundles', 'mix_match_bundle' );
+        }
+        
+        return $result;
     }
     
     /**
@@ -389,8 +349,24 @@ class MMB_Bundle_Manager {
     public function get_enabled_bundles() {
         global $wpdb;
         
+        $cache_key = 'mmb_enabled_bundles';
+        $cache_group = 'mix_match_bundle';
+        
+        $cached = wp_cache_get( $cache_key, $cache_group );
+        if ( false !== $cached ) {
+            return $cached;
+        }
+        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
         $bundles = $wpdb->get_results(
-            "SELECT * FROM {$this->table} WHERE enabled = 1 ORDER BY id DESC"
+            /* phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber */
+            $wpdb->prepare(
+                sprintf(
+                    'SELECT * FROM %s WHERE enabled = %%d ORDER BY id DESC',
+                    esc_sql( mmb_get_table_name() )
+                ),
+                1
+            )
         );
         
         $formatted = [];
@@ -398,6 +374,7 @@ class MMB_Bundle_Manager {
             $formatted[] = $this->format_bundle( $bundle );
         }
         
+        wp_cache_set( $cache_key, $formatted, $cache_group, MINUTE_IN_SECONDS * 5 );
         return $formatted;
     }
 }
