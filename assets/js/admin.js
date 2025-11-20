@@ -177,7 +177,7 @@
                 // Remove product from selected list (delegated)
                 this.elements.selectedProductsList.addEventListener('click', (e) => {
                     if (e.target.classList.contains('mmb-remove-selected-product')) {
-                        const productId = parseInt(e.target.dataset.productId);
+                        const productId = this.normalizeProductId(e.target.dataset.productId);
                         this.removeSelectedProduct(productId);
                     }
                 });
@@ -766,7 +766,9 @@
             this.elements.showProgressText.checked = bundle.show_progress_text !== 0;
             
             // Store selected products in state (preserving order)
-            this.selectedProductsOrder = bundle.product_ids.map(id => parseInt(id));
+            this.selectedProductsOrder = (bundle.product_ids || [])
+                .map((id) => this.normalizeProductId(id))
+                .filter((id) => Number.isInteger(id) && id > 0);
             this.selectedProductIds = new Set(this.selectedProductsOrder);
             console.log('Selected product IDs:', this.selectedProductIds);
             console.log('Product order:', this.selectedProductsOrder);
@@ -822,8 +824,10 @@
             }
             
             // Check which products are missing from cache
-            const cachedIds = new Set(this.allProducts.map(p => p.id));
-            const missingIds = productIds.filter(id => !cachedIds.has(id));
+            const cachedIds = new Set(this.allProducts.map((p) => p.id));
+            const missingIds = productIds
+                .map((id) => this.normalizeProductId(id))
+                .filter((id) => Number.isInteger(id) && id > 0 && !cachedIds.has(id));
             
             if (missingIds.length === 0) {
                 console.log('✅ All products already in cache');
@@ -832,21 +836,22 @@
             
             console.log('📥 Fetching', missingIds.length, 'missing products:', missingIds);
             
-            // Fetch all products to ensure we get the missing ones
-            // This is simpler than fetching individual products
+            // Fetch only the missing products from the server
             try {
                 const response = await this.ajax({
-                    action: 'mmb_search_products',
+                    action: 'mmb_get_products_by_ids',
                     nonce: mmb_admin.nonce,
-                    search: '' // Empty search returns all products
+                    product_ids: missingIds
                 });
                 
                 if (response.success) {
                     // Merge into cache
-                    const existingIds = new Set(this.allProducts.map(p => p.id));
-                    response.data.forEach(product => {
+                    const existingIds = new Set(this.allProducts.map((p) => p.id));
+                    const normalizedResults = response.data.map((product) => this.normalizeProduct(product));
+                    normalizedResults.forEach(product => {
                         if (!existingIds.has(product.id)) {
                             this.allProducts.push(product);
+                            existingIds.add(product.id);
                         }
                     });
                     console.log('✅ Cache updated, total products:', this.allProducts.length);
@@ -875,10 +880,10 @@
                     
                     // Merge new products into cache instead of replacing
                     // This ensures previously selected products remain in cache
-                    const newProducts = response.data;
-                    const existingIds = new Set(this.allProducts.map(p => p.id));
+                    const normalizedResults = response.data.map((product) => this.normalizeProduct(product));
+                    const existingIds = new Set(this.allProducts.map((p) => p.id));
                     
-                    newProducts.forEach(product => {
+                    normalizedResults.forEach(product => {
                         if (!existingIds.has(product.id)) {
                             this.allProducts.push(product);
                             existingIds.add(product.id);
@@ -886,7 +891,7 @@
                     });
                     
                     console.log('Total products in cache:', this.allProducts.length);
-                    this.renderProducts(response.data); // Still render only search results
+                    this.renderProducts(normalizedResults); // Still render only search results
                 } else {
                     console.error('Search failed:', response);
                     this.renderProducts([]);
@@ -903,7 +908,7 @@
         renderProducts(products) {
             let html = '';
             
-            products.forEach((product) => {
+            products.map((product) => this.normalizeProduct(product)).forEach((product) => {
                 const checked = this.selectedProductIds.has(product.id) ? 'checked' : '';
                 html += `
                     <label class="mmb-product-option">
@@ -921,7 +926,13 @@
          * Update selected products state
          */
         updateSelectedProducts(checkbox) {
-            const productId = parseInt(checkbox.value);
+            const productId = this.normalizeProductId(checkbox.value);
+            
+            if (!productId || productId <= 0) {
+                console.warn('Invalid product ID encountered, skipping.');
+                checkbox.checked = false;
+                return;
+            }
             
             console.log('=== updateSelectedProducts called ===');
             console.log('Product ID:', productId);
@@ -958,6 +969,10 @@
          * Remove product from selection
          */
         removeSelectedProduct(productId) {
+            productId = this.normalizeProductId(productId);
+            if (!productId || productId <= 0) {
+                return;
+            }
             // Remove from Set
             this.selectedProductIds.delete(productId);
             
@@ -1022,7 +1037,13 @@
             let renderedCount = 0;
             const missingProductIds = [];
             
-            this.selectedProductsOrder.forEach((productId, index) => {
+            this.selectedProductsOrder.forEach((rawProductId, index) => {
+                const productId = this.normalizeProductId(rawProductId);
+                if (!productId || productId <= 0) {
+                    console.warn('Skipping invalid product ID during render:', rawProductId);
+                    return;
+                }
+                
                 console.log(`Rendering product ${index + 1}/${this.selectedProductsOrder.length}: ID ${productId}`);
                 
                 const product = this.allProducts.find(p => p.id === productId);
@@ -1091,7 +1112,9 @@
             }
             
             const items = this.elements.selectedProductsList.querySelectorAll('.mmb-selected-product-item');
-            this.selectedProductsOrder = Array.from(items).map(item => parseInt(item.dataset.productId));
+            this.selectedProductsOrder = Array.from(items)
+                .map(item => this.normalizeProductId(item.dataset.productId))
+                .filter(id => Number.isInteger(id) && id > 0);
             console.log('Updated product order:', this.selectedProductsOrder);
             
             // Update order numbers
@@ -1227,6 +1250,45 @@
             this.renderSelectedProducts(); // Hide selected products section
             this.addTierInput(2, 10);
             this.searchProducts('');
+        },
+        
+        /**
+         * Normalize a product ID value into a positive integer
+         */
+        normalizeProductId(value) {
+            if (typeof value === 'object' && value !== null) {
+                if (value.product_id !== undefined) {
+                    return this.normalizeProductId(value.product_id);
+                }
+                if (value.id !== undefined) {
+                    return this.normalizeProductId(value.id);
+                }
+            }
+            
+            if (value === null || value === undefined) {
+                return 0;
+            }
+            
+            const parsed = parseInt(String(value).trim(), 10);
+            return Number.isFinite(parsed) ? parsed : 0;
+        },
+        
+        /**
+         * Normalize product objects received from AJAX
+         */
+        normalizeProduct(product) {
+            if (!product) {
+                return { id: 0, name: '', price: '' };
+            }
+            
+            const normalized = { ...product };
+            normalized.id = this.normalizeProductId(normalized.id);
+            normalized.name = normalized.name ? normalized.name.toString() : '';
+            normalized.price = (normalized.price !== undefined && normalized.price !== null)
+                ? normalized.price.toString()
+                : '';
+            
+            return normalized;
         },
         
         /**

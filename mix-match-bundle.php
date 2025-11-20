@@ -403,6 +403,7 @@ add_action( 'wp_ajax_mmb_save_bundle', 'mmb_save_bundle' );
 add_action( 'wp_ajax_mmb_get_bundles', 'mmb_get_bundles' );
 add_action( 'wp_ajax_mmb_delete_bundle', 'mmb_delete_bundle' );
 add_action( 'wp_ajax_mmb_search_products', 'mmb_search_products' );
+add_action( 'wp_ajax_mmb_get_products_by_ids', 'mmb_get_products_by_ids' );
 add_action( 'wp_ajax_nopriv_mmb_update_bundle_items', 'mmb_update_bundle_items' );
 add_action( 'wp_ajax_mmb_update_bundle_items', 'mmb_update_bundle_items' );
 add_action( 'wp_ajax_nopriv_mmb_add_bundle_to_cart', 'mmb_add_bundle_to_cart' );
@@ -588,6 +589,76 @@ function mmb_search_products() {
         }
     }
     
+    wp_send_json_success( $formatted );
+}
+
+/**
+ * Ajax handler to fetch specific products by ID.
+ *
+ * This is used by the admin UI to ensure previously selected products are
+ * always available in the local cache, even if they do not match the current
+ * search query.
+ *
+ * @since 1.0.0
+ * @return void
+ */
+function mmb_get_products_by_ids() {
+    check_ajax_referer( 'mmb_admin_nonce', 'nonce' );
+
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( __( 'Unauthorized', 'mix-match-bundle' ) );
+    }
+
+    $product_ids = [];
+    $raw_ids_array = filter_input( INPUT_POST, 'product_ids', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+    if ( null !== $raw_ids_array && false !== $raw_ids_array ) {
+        $raw_ids_array = wp_unslash( $raw_ids_array );
+        $raw_ids_array = array_map( 'sanitize_text_field', $raw_ids_array );
+        $product_ids = array_map( 'absint', $raw_ids_array );
+    } else {
+        $raw_ids_string = filter_input( INPUT_POST, 'product_ids', FILTER_UNSAFE_RAW ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        if ( null !== $raw_ids_string && '' !== $raw_ids_string ) {
+            $raw_ids_string = sanitize_textarea_field( wp_unslash( $raw_ids_string ) );
+            $decoded = json_decode( $raw_ids_string, true );
+            if ( is_array( $decoded ) ) {
+                $product_ids = array_map( 'absint', $decoded );
+            } else {
+                $parts = array_filter( array_map( 'trim', explode( ',', $raw_ids_string ) ) );
+                $product_ids = array_map( 'absint', $parts );
+            }
+        }
+    }
+
+    $product_ids = array_values( array_unique( array_filter( $product_ids ) ) );
+
+    if ( empty( $product_ids ) ) {
+        wp_send_json_success( [] );
+    }
+
+    $args = [
+        'post_type' => [ 'product', 'product_variation' ],
+        'post__in' => $product_ids,
+        'posts_per_page' => count( $product_ids ),
+        'orderby' => 'post__in',
+    ];
+
+    $products = get_posts( $args );
+    $formatted = [];
+
+    foreach ( $products as $product_post ) {
+        $product = wc_get_product( $product_post->ID );
+        if ( ! $product ) {
+            continue;
+        }
+
+        $formatted[] = [
+            'id' => $product->get_id(),
+            'name' => $product->get_name(),
+            'price' => wc_price( $product->get_price() ),
+        ];
+    }
+
     wp_send_json_success( $formatted );
 }
 
