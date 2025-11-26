@@ -296,8 +296,22 @@ class Mix_Match_Bundle {
             return;
         }
         
-        wp_enqueue_style( 'mix-match-frontend', MMB_PLUGIN_URL . 'assets/css/frontend.css', [], MMB_VERSION );
-        wp_enqueue_script( 'mix-match-frontend', MMB_PLUGIN_URL . 'assets/js/frontend.js', [], MMB_VERSION, true );
+        $css_path = MMB_PLUGIN_DIR . 'assets/css/frontend.css';
+        $js_path  = MMB_PLUGIN_DIR . 'assets/js/frontend.js';
+
+        $css_version = MMB_VERSION;
+        $js_version  = MMB_VERSION;
+
+        if ( file_exists( $css_path ) ) {
+            $css_version .= '-' . filemtime( $css_path );
+        }
+
+        if ( file_exists( $js_path ) ) {
+            $js_version .= '-' . filemtime( $js_path );
+        }
+
+        wp_enqueue_style( 'mix-match-frontend', MMB_PLUGIN_URL . 'assets/css/frontend.css', [], $css_version );
+        wp_enqueue_script( 'mix-match-frontend', MMB_PLUGIN_URL . 'assets/js/frontend.js', [], $js_version, true );
         
         // Get bundle discount info for JavaScript
         $bundle_discount_data = [];
@@ -421,6 +435,8 @@ add_action( 'wp_ajax_nopriv_mmb_add_bundle_to_cart', 'mmb_add_bundle_to_cart' );
 add_action( 'wp_ajax_mmb_add_bundle_to_cart', 'mmb_add_bundle_to_cart' );
 add_action( 'wp_ajax_woocommerce_ajax_add_to_cart', 'mmb_wc_ajax_add_to_cart' );
 add_action( 'wp_ajax_nopriv_woocommerce_ajax_add_to_cart', 'mmb_wc_ajax_add_to_cart' );
+add_action( 'wp_ajax_mmb_wc_ajax_add_to_cart', 'mmb_wc_ajax_add_to_cart' );
+add_action( 'wp_ajax_nopriv_mmb_wc_ajax_add_to_cart', 'mmb_wc_ajax_add_to_cart' );
 
 function mmb_save_bundle() {
     check_ajax_referer( 'mmb_admin_nonce', 'nonce' );
@@ -680,13 +696,26 @@ function mmb_add_bundle_to_cart() {
     $bundle_items_json = isset( $_POST['bundle_items'] ) ? sanitize_textarea_field( wp_unslash( $_POST['bundle_items'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     $discount_amount = isset( $_POST['discount_amount'] ) ? floatval( wp_unslash( $_POST['discount_amount'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     
-    // Debug logging
-    
     // Parse bundle items
     $bundle_items = json_decode( $bundle_items_json, true );
     
     if ( ! $bundle_id || empty( $bundle_items ) ) {
         wp_send_json_error( __( 'Invalid data', 'mix-match-bundle' ) );
+    }
+    
+    // Clear any previous bundle session to prevent mixing old and new bundles
+    if ( WC()->session ) {
+        $old_session = WC()->session->get( 'mmb_bundle_discount' );
+        if ( $old_session ) {
+            // Remove old coupon if it exists
+            if ( isset( $old_session['coupon_code'] ) && ! empty( $old_session['coupon_code'] ) && WC()->cart ) {
+                $old_coupon_code = $old_session['coupon_code'];
+                if ( WC()->cart->has_discount( $old_coupon_code ) ) {
+                    WC()->cart->remove_coupon( $old_coupon_code );
+                }
+            }
+            WC()->session->set( 'mmb_bundle_discount', null );
+        }
     }
     
     // Extract product IDs for discount tracking
@@ -704,7 +733,7 @@ function mmb_add_bundle_to_cart() {
         }
     }
     
-    // Store bundle info in session
+    // Store NEW bundle info in session
     WC()->session->set( 'mmb_bundle_discount', [
         'bundle_id' => $bundle_id,
         'product_ids' => $product_ids,
@@ -712,76 +741,268 @@ function mmb_add_bundle_to_cart() {
         'discount_amount' => $discount_amount,
     ]);
     
+    // Force save session data
+    if ( method_exists( WC()->session, 'save_data' ) ) {
+        WC()->session->save_data();
+    }
+    
     wp_send_json_success( __( 'Bundle added to session', 'mix-match-bundle' ) );
 }
 
 function mmb_wc_ajax_add_to_cart() {
-    // Ensure WooCommerce is loaded
-    if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
-        wp_send_json_error( __( 'WooCommerce not available', 'mix-match-bundle' ) );
-    }
+    try {
+        if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+            wp_send_json_error( __( 'WooCommerce not available', 'mix-match-bundle' ) );
+            return;
+        }
+        
+        // Check if we're adding multiple products (bundle) or single product
+        $products_json = isset( $_POST['products'] ) ? sanitize_textarea_field( wp_unslash( $_POST['products'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     
-    $product_id = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    if ( ! empty( $products_json ) ) {
+        // Handle multiple products
+        $products = json_decode( $products_json, true );
+        
+        if ( empty( $products ) || ! is_array( $products ) ) {
+            wp_send_json_error( __( 'Invalid products data', 'mix-match-bundle' ) );
+        }
+
+        // Get discount amount from POST parameter first (most reliable), then fallback to session
+        $discount_amount = isset( $_POST['discount_amount'] ) ? floatval( wp_unslash( $_POST['discount_amount'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        
+        $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
+        $bundle_id    = $session_data && isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+        
+        // Use session discount if POST parameter is 0
+        if ( $discount_amount <= 0 && $session_data && isset( $session_data['discount_amount'] ) ) {
+            $discount_amount = floatval( $session_data['discount_amount'] );
+        }
+
+        $added_items = [];
+        $failed_items = [];
+
+        foreach ( $products as $item ) {
+            $product_id   = isset( $item['product_id'] ) ? absint( $item['product_id'] ) : ( isset( $item['id'] ) ? absint( $item['id'] ) : 0 );
+            $variation_id = isset( $item['variation_id'] ) ? absint( $item['variation_id'] ) : 0;
+            $quantity     = isset( $item['quantity'] ) ? absint( $item['quantity'] ) : 1;
+
+            if ( $product_id < 1 ) {
+                $failed_items[] = __( 'Invalid product ID', 'mix-match-bundle' );
+                continue;
+            }
+
+            $check_id = $variation_id ? $variation_id : $product_id;
+            $product  = wc_get_product( $check_id );
+
+            if ( ! $product || ! $product->is_purchasable() ) {
+                $failed_items[] = sprintf(
+                    /* translators: %s: Product or variation identifier (e.g., "Product 123" or "Variation 456") */
+                    __( 'Product cannot be purchased: %s', 'mix-match-bundle' ),
+                    ( $variation_id ? "Variation $variation_id" : "Product $product_id" )
+                );
+                continue;
+            }
+
+            // Mark item as bundle item - coupon will handle the discount
+            $cart_item_data = [
+                'mmb_bundle_item' => true,
+                'mmb_bundle_id'   => $bundle_id,
+            ];
+
+            if ( $variation_id ) {
+                $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, [], $cart_item_data );
+            } else {
+                $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, 0, [], $cart_item_data );
+            }
+
+            if ( $cart_item_key ) {
+                $added_items[] = $cart_item_key;
+            } else {
+                $failed_items[] = sprintf(
+                    /* translators: %d: Product ID */
+                    __( 'Failed to add product %d', 'mix-match-bundle' ),
+                    $product_id
+                );
+            }
+        }
+
+        if ( empty( $added_items ) ) {
+            wp_send_json_error( [
+                'message' => __( 'Failed to add any products to cart', 'mix-match-bundle' ),
+                'errors' => $failed_items,
+            ] );
+        }
+
+        // Apply bundle coupon if we have bundle data
+        try {
+            if ( $session_data && isset( $session_data['bundle_id'] ) && isset( $session_data['discount_amount'] ) ) {
+                $bundle_id = intval( $session_data['bundle_id'] );
+                $discount_amount = floatval( $session_data['discount_amount'] );
+                
+                if ( $bundle_id > 0 && $discount_amount > 0 ) {
+                    // Calculate bundle subtotal
+                    $bundle_subtotal = 0;
+                    foreach ( WC()->cart->get_cart() as $item ) {
+                        if ( ! empty( $item['mmb_bundle_item'] ) ) {
+                            $bundle_subtotal += $item['data']->get_price() * $item['quantity'];
+                        }
+                    }
+                    
+                    if ( $bundle_subtotal > 0 ) {
+                        // Get product IDs from session for coupon restriction
+                        $bundle_product_ids = isset( $session_data['product_ids'] ) ? $session_data['product_ids'] : [];
+                        
+                        // Get cart instance to create and apply coupon
+                        if ( ! class_exists( 'MMB_Cart' ) ) {
+                            // Class not loaded, skip coupon creation
+                            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+                                error_log( 'MMB: MMB_Cart class not found' );
+                            }
+                        } else {
+                            $cart_handler = MMB_Cart::get_instance();
+                            
+                            if ( method_exists( $cart_handler, 'create_bundle_coupon' ) ) {
+                            $coupon_code = $cart_handler->create_bundle_coupon( $bundle_id, $discount_amount, $bundle_subtotal, $bundle_product_ids );
+                            
+                            // Only proceed if coupon was created successfully
+                            if ( ! empty( $coupon_code ) ) {
+                                // Verify coupon exists before applying
+                                $coupon_id = wc_get_coupon_id_by_code( $coupon_code );
+                                if ( $coupon_id ) {
+                                    // Apply coupon if not already applied
+                                    if ( ! WC()->cart->has_discount( $coupon_code ) ) {
+                                        // Apply coupon
+                                        $coupon_applied = WC()->cart->apply_coupon( $coupon_code );
+                                        
+                                        // Verify coupon was applied
+                                        if ( $coupon_applied && WC()->cart->has_discount( $coupon_code ) ) {
+                                            // Remove any error notices about our bundle coupon
+                                            if ( method_exists( $cart_handler, 'remove_bundle_coupon_notices' ) ) {
+                                                $cart_handler->remove_bundle_coupon_notices();
+                                            }
+                                            
+                                            // Recalculate totals immediately after coupon application
+                                            // This ensures the discount is included in cart totals
+                                            WC()->cart->calculate_totals();
+                                        }
+                                    } elseif ( WC()->cart->has_discount( $coupon_code ) ) {
+                                        // Coupon already applied, just recalculate totals
+                                        WC()->cart->calculate_totals();
+                                    }
+                                }
+                            }
+                        }
+                        } // End if class_exists check
+                    }
+                }
+            }
+        } catch ( Exception $e ) {
+            // Log error but don't break the cart addition
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+                error_log( 'MMB Coupon Error: ' . $e->getMessage() );
+            }
+        }
+
+        // Final calculation to ensure all totals are correct (including coupon discount)
+        WC()->cart->calculate_totals();
+
+        // Use WooCommerce's native fragment refresh to ensure compatibility
+        // Fragments will now use the discounted prices we just set
+        $fragments = WC_AJAX::get_refreshed_fragments();
+
+        do_action( 'woocommerce_ajax_added_to_cart', $product_id );
+
+        // Return fragments in the format WooCommerce expects
+        wp_send_json( [
+            'fragments' => $fragments,
+            'cart_hash' => WC()->cart->get_cart_hash(),
+        ] );
+    }
+
+    // Handle single product (legacy support)
+    $product_id   = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     $variation_id = isset( $_POST['variation_id'] ) ? absint( wp_unslash( $_POST['variation_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-    $quantity = isset( $_POST['quantity'] ) ? absint( wp_unslash( $_POST['quantity'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $quantity     = isset( $_POST['quantity'] ) ? absint( wp_unslash( $_POST['quantity'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     
     if ( $product_id < 1 ) {
         wp_send_json_error( __( 'Invalid product ID', 'mix-match-bundle' ) );
     }
     
-    // Determine which ID to use for the product check
     $check_id = $variation_id ? $variation_id : $product_id;
+    $product  = wc_get_product( $check_id );
     
-    // Check if product exists and is purchasable
-    $product = wc_get_product( $check_id );
     if ( ! $product || ! $product->is_purchasable() ) {
-        /* translators: %s: product or variation ID */
-        wp_send_json_error( sprintf( __( 'Product cannot be purchased: %s', 'mix-match-bundle' ), ( $variation_id ? "Variation $variation_id" : "Product $product_id" ) ) );
+        wp_send_json_error(
+            sprintf(
+                /* translators: %s: product or variation ID */
+                __( 'Product cannot be purchased: %s', 'mix-match-bundle' ),
+                ( $variation_id ? "Variation $variation_id" : "Product $product_id" )
+            )
+        );
     }
-    
-    // Get bundle ID from session to mark items as part of a bundle
+
     $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
-    $bundle_id = $session_data && isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
-    
-    // Add cart item data to identify bundle items
-    // Don't use unique keys - let WooCommerce combine same products naturally
+    $bundle_id    = $session_data && isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+
     $cart_item_data = [
         'mmb_bundle_item' => true,
-        'mmb_bundle_id' => $bundle_id, // Store bundle ID for identification
+        'mmb_bundle_id'   => $bundle_id,
     ];
-    
-    // Add product to cart (with variation support)
+
     if ( $variation_id ) {
-        // For variations, we need to pass the parent product ID and variation ID separately
         $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, [], $cart_item_data );
     } else {
-        // Simple product
         $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, 0, [], $cart_item_data );
     }
     
     if ( $cart_item_key ) {
-        // Get cart count
-        $cart_count = WC()->cart->get_cart_contents_count();
-        
-        // Calculate cart totals to ensure fees are applied
-        // This is critical - must calculate before getting fragments
         WC()->cart->calculate_fees();
         WC()->cart->calculate_totals();
-        
-        // Get cart fragments for WooCommerce cart updates
-        // This will trigger our filters when fragments are generated
-        $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', [] );
-        
-        wp_send_json_success( [
-            'cart_item_key' => $cart_item_key,
-            'product_id' => $product_id,
-            'variation_id' => $variation_id,
-            'cart_count' => $cart_count,
-            'fragments' => $fragments,
-            'cart_hash' => WC()->cart->get_cart_hash(),
-        ] );
+        do_action( 'woocommerce_ajax_added_to_cart', $product_id );
+
+        if ( class_exists( 'WC_AJAX' ) ) {
+            WC_AJAX::get_refreshed_fragments();
+        } else {
+            wp_send_json_success(
+                [
+                    'fragments' => [],
+                    'cart_hash' => WC()->cart->get_cart_hash(),
+                ]
+            );
+        }
     } else {
         wp_send_json_error( __( 'Failed to add product to cart', 'mix-match-bundle' ) );
+    }
+    } catch ( Exception $e ) {
+        // Log the full error for debugging
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log( 'MMB AJAX Error: ' . $e->getMessage() );
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log( 'MMB AJAX Stack Trace: ' . $e->getTraceAsString() );
+        }
+        
+        // Send error response to frontend
+        wp_send_json_error( [
+            'message' => __( 'An error occurred while adding products to cart', 'mix-match-bundle' ),
+            'error' => defined( 'WP_DEBUG' ) && WP_DEBUG ? $e->getMessage() : '',
+        ] );
+    } catch ( Error $e ) {
+        // Catch fatal errors (PHP 7+)
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log( 'MMB AJAX Fatal Error: ' . $e->getMessage() );
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+            error_log( 'MMB AJAX Stack Trace: ' . $e->getTraceAsString() );
+        }
+        
+        // Send error response to frontend
+        wp_send_json_error( [
+            'message' => __( 'An error occurred while adding products to cart', 'mix-match-bundle' ),
+            'error' => defined( 'WP_DEBUG' ) && WP_DEBUG ? $e->getMessage() : '',
+        ] );
     }
 }
 

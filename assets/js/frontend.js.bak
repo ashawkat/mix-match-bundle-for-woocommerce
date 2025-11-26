@@ -173,24 +173,30 @@
             this.bindEvents();
             this.preventWooCommerceRedirect();
             this.cleanupWooAddedToCartLinks();
+            console.log('MMB Frontend initialized');
         },
         
         /**
          * Cache DOM elements
          */
         cacheDom() {
+            console.log('🔍 Caching DOM elements...');
             this.wrapper = document.querySelector('.mmb-bundle-wrapper');
             if (!this.wrapper) {
-                console.error('MMB: Wrapper not found!');
+                console.error('❌ Wrapper not found!');
                 return;
             }
+            console.log('✅ Wrapper found:', this.wrapper);
             
             this.productSelects = this.wrapper.querySelectorAll('.mmb-product-select');
             this.productQtys = this.wrapper.querySelectorAll('.mmb-product-qty-input');
             this.variationDropdowns = this.wrapper.querySelectorAll('.mmb-variation-dropdown');
             this.bundleItemsContainer = this.wrapper.querySelector('#mmb-bundle-items');
+            console.log('🔍 bundleItemsContainer:', this.bundleItemsContainer);
             if (!this.bundleItemsContainer) {
-                console.error('MMB: bundleItemsContainer (#mmb-bundle-items) NOT FOUND!');
+                console.error('❌ bundleItemsContainer (#mmb-bundle-items) NOT FOUND!');
+            } else {
+                console.log('✅ bundleItemsContainer found:', this.bundleItemsContainer);
             }
             
             this.itemCount = this.wrapper.querySelector('.mmb-item-count');
@@ -214,6 +220,7 @@
             
             // Get settings
             this.cartBehavior = this.wrapper.dataset.cartBehavior || 'sidecart';
+            console.log('Cart behavior set to:', this.cartBehavior);
 
             this.storeOriginalButtonLabels();
             
@@ -231,12 +238,22 @@
             this.hoverAccentColor = this.wrapper.dataset.hoverAccentColor || '#2e7d32';
             this.buttonTextColor = this.wrapper.dataset.buttonTextColor || '#ffffff';
             
+            console.log('🎨 Applying custom colors:', {
+                primary: this.primaryColor,
+                accent: this.accentColor,
+                hoverBg: this.hoverBgColor,
+                hoverAccent: this.hoverAccentColor,
+                buttonText: this.buttonTextColor
+            });
+            
             // Set CSS custom properties on the wrapper - these will cascade to all children
             this.wrapper.style.setProperty('--mmb-primary-color', this.primaryColor);
             this.wrapper.style.setProperty('--mmb-accent-color', this.accentColor);
             this.wrapper.style.setProperty('--mmb-hover-bg-color', this.hoverBgColor);
             this.wrapper.style.setProperty('--mmb-hover-accent-color', this.hoverAccentColor);
             this.wrapper.style.setProperty('--mmb-button-text-color', this.buttonTextColor);
+            
+            console.log('✅ Colors applied successfully!');
         },
         
         /**
@@ -404,10 +421,14 @@
          * Update bundle calculations
          */
         updateBundle() {
+            console.log('🔍 updateBundle called');
             const selectedProducts = this.getSelectedProducts();
+            console.log('Selected products:', selectedProducts);
             const itemCount = selectedProducts.length;
+            console.log('Item count:', itemCount);
             
             if (itemCount === 0) {
+                console.log('No products selected, resetting display');
                 this.resetBundleDisplay();
                 return;
             }
@@ -417,6 +438,7 @@
             selectedProducts.forEach(product => {
                 subtotal += parseFloat(product.price || 0);
             });
+            console.log('Subtotal:', subtotal);
             
             // Get discount data from backend
             this.calculateBundleDiscount(selectedProducts, subtotal, itemCount);
@@ -426,11 +448,19 @@
          * Calculate bundle discount via AJAX
          */
         async calculateBundleDiscount(products, subtotal, itemCount) {
+            console.log('🔍 calculateBundleDiscount called');
+            console.log('Products:', products);
+            console.log('Item count:', itemCount);
+            
             const bundleId = this.wrapper.dataset.bundleId;
             const productIds = products.map(p => ({
                 product_id: p.product_id,
                 variation_id: p.variation_id || 0
             }));
+            
+            console.log('Sending AJAX to mmb_update_bundle_items');
+            console.log('Bundle ID:', bundleId);
+            console.log('Product IDs:', productIds);
             
             try {
                 const response = await fetch(mmb_frontend.ajaxurl, {
@@ -447,13 +477,17 @@
                 });
                 
                 const data = await response.json();
+                console.log('📦 AJAX Response from mmb_update_bundle_items:', data);
                 
                 if (data.success) {
+                    console.log('✅ AJAX Success! Data:', data.data);
                     this.updateBundleDisplay(data.data, itemCount);
                     this.updateTierDisplay(itemCount, data.data.discount_percentage);
+                } else {
+                    console.error('❌ AJAX returned success=false:', data);
                 }
             } catch (error) {
-                console.error('MMB: Error calculating bundle discount:', error);
+                console.error('Error calculating bundle discount:', error);
             }
         },
         
@@ -461,6 +495,11 @@
          * Update bundle display
          */
         updateBundleDisplay(data, itemCount) {
+            console.log('🔍 updateBundleDisplay called');
+            console.log('Data received:', data);
+            console.log('Item count:', itemCount);
+            console.log('bundleItemsContainer element:', this.bundleItemsContainer);
+            
             // Store bundle data
             this.bundleData = data;
             this.wrapper.dataset.bundleData = JSON.stringify(data);
@@ -468,16 +507,24 @@
             // Update item count
             if (this.itemCount) {
                 this.itemCount.textContent = itemCount;
+                console.log('✅ Updated item count to:', itemCount);
             }
             if (this.mobileItems) {
                 this.mobileItems.textContent = `${itemCount} ${itemCount === 1 ? 'item' : 'items'}`;
             }
             
             // Populate product list in sidebar
+            console.log('Checking product list conditions:');
+            console.log('- bundleItemsContainer exists?', !!this.bundleItemsContainer);
+            console.log('- data.products exists?', !!data.products);
+            console.log('- data.products:', data.products);
+            
             if (this.bundleItemsContainer && data.products && data.products.length > 0) {
+                console.log('✅ Populating product list with', data.products.length, 'products');
                 this.bundleItemsContainer.innerHTML = '';
                 
                 data.products.forEach((product, index) => {
+                    console.log(`Adding product ${index + 1}:`, product);
                     
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'mmb-bundle-item';
@@ -499,8 +546,22 @@
                         <span class="mmb-item-price">${this.formatPrice(productPrice)}</span>
                     `;
                     
+                    console.log('Created item div:', itemDiv);
                     this.bundleItemsContainer.appendChild(itemDiv);
                 });
+                
+                console.log('✅ Product list populated! Container HTML:', this.bundleItemsContainer.innerHTML);
+            } else {
+                console.warn('❌ Could not populate product list:');
+                if (!this.bundleItemsContainer) {
+                    console.warn('- bundleItemsContainer is NULL!');
+                }
+                if (!data.products) {
+                    console.warn('- data.products is undefined/null!');
+                }
+                if (data.products && data.products.length === 0) {
+                    console.warn('- data.products is empty array!');
+                }
             }
             
             // Format and update prices
@@ -748,6 +809,11 @@
             
             const bundleId = this.wrapper.dataset.bundleId;
             
+            console.log('Starting bundle add to cart');
+            console.log('Bundle ID:', bundleId);
+            console.log('Products:', this.bundleData.products);
+            console.log('Discount amount:', this.bundleData.discount_amount);
+            
             // Disable buttons
             if (this.addToCartBtn) {
                 this.addToCartBtn.disabled = true;
@@ -759,42 +825,9 @@
             }
             
             try {
-                // Calculate discounted prices for each item
-                const products = this.bundleData.products;
-                const discountAmount = parseFloat(this.bundleData.discount_amount || 0);
-                const totalPrice = parseFloat(this.bundleData.total_price || 0);
-                
-                // Calculate original subtotal from products if not in bundleData
-                let originalSubtotal = parseFloat(this.bundleData.subtotal || 0);
-                if (originalSubtotal <= 0 && products && products.length > 0) {
-                    originalSubtotal = products.reduce((sum, product) => {
-                        const price = parseFloat(product.price || 0);
-                        const quantity = parseInt(product.quantity || 1);
-                        return sum + (price * quantity);
-                    }, 0);
-                }
-                
-                // Calculate discount ratio
-                const discountRatio = originalSubtotal > 0 ? discountAmount / originalSubtotal : 0;
-                
-                // Calculate discounted price for each product
-                const productsWithDiscount = products.map(product => {
-                    const originalPrice = parseFloat(product.price || 0);
-                    const quantity = parseInt(product.quantity || 1);
-                    const itemSubtotal = originalPrice * quantity;
-                    const itemDiscount = itemSubtotal * discountRatio;
-                    const discountedPrice = Math.max(0, originalPrice - (itemDiscount / quantity));
-                    
-                    return {
-                        ...product,
-                        original_price: originalPrice,
-                        discounted_price: discountedPrice,
-                        price: discountedPrice // Use discounted price as the main price
-                    };
-                });
-                
-                // Prepare data for AJAX request with discounted prices
-                const bundleItemsJson = JSON.stringify(productsWithDiscount);
+                // Prepare data for AJAX request
+                const bundleItemsJson = JSON.stringify(this.bundleData.products);
+                console.log('Bundle items JSON:', bundleItemsJson);
                 
                 const formData = new URLSearchParams({
                     action: 'mmb_add_bundle_to_cart',
@@ -804,6 +837,8 @@
                     total_price: this.bundleData.total_price,
                     discount_amount: this.bundleData.discount_amount
                 });
+                
+                console.log('Sending AJAX request with data:', Object.fromEntries(formData));
                 
                 // Store bundle data in session
                 const sessionResponse = await fetch(mmb_frontend.ajaxurl, {
@@ -815,10 +850,11 @@
                 });
                 
                 const sessionData = await sessionResponse.json();
+                console.log('Bundle session response:', sessionData);
                 
                 if (sessionData.success) {
-                    // Add all products in a single AJAX call (use products with discounted prices)
-                    await this.addAllProductsToCart(productsWithDiscount);
+                    // Add all products in a single AJAX call
+                    await this.addAllProductsToCart(this.bundleData.products);
                 } else {
                     const errorMessage = typeof sessionData.data === 'string' ? sessionData.data : 'Failed to save bundle to session';
                     console.error('Session error:', errorMessage);
@@ -842,16 +878,14 @@
          * Add all products to cart in a single AJAX call
          */
         async addAllProductsToCart(products) {
-            // Group products and combine quantities, preserving discounted prices
+            console.log('Original products array:', products);
+            
+            // Group products and combine quantities
             const productMap = {};
             products.forEach(product => {
-            const productId = product.id || product.product_id;
-            const variationId = product.variation_id || 0;
+                const productId = product.id || product.product_id;
+                const variationId = product.variation_id || 0;
                 const key = `${productId}_${variationId}`;
-                
-                // Get discounted price (should already be calculated)
-                const discountedPrice = product.discounted_price || product.price;
-                const originalPrice = product.original_price || product.price;
                 
                 if (productMap[key]) {
                     productMap[key].quantity += (product.quantity || 1);
@@ -861,25 +895,19 @@
                         product_id: productId,
                         variation_id: variationId,
                         quantity: product.quantity || 1,
-                        name: product.name || '',
-                        price: discountedPrice, // Set price to discounted price (backend will use this)
-                        discounted_price: discountedPrice,
-                        original_price: originalPrice
+                        name: product.name || ''
                     };
                 }
             });
             
             // Convert map back to array
             const groupedProducts = Object.values(productMap);
+            console.log('Grouped products to add:', groupedProducts);
             
             try {
-                // Get discount amount from bundle data
-                const discountAmount = this.bundleData && this.bundleData.discount_amount ? this.bundleData.discount_amount : 0;
-                
                 const params = new URLSearchParams({
                     action: 'mmb_wc_ajax_add_to_cart',
-                    products: JSON.stringify(groupedProducts),
-                    discount_amount: discountAmount
+                    products: JSON.stringify(groupedProducts)
                 });
                 
                 const response = await fetch(mmb_frontend.ajaxurl, {
@@ -899,9 +927,20 @@
                 try {
                     data = await response.json();
                 } catch (jsonError) {
-                    console.error('MMB: Failed to parse JSON response:', jsonError);
+                    console.error('Failed to parse JSON response:', jsonError);
+                    console.error('Response text:', await response.text());
                     throw new Error('Invalid JSON response from server');
                 }
+                
+                console.log('Add to cart response:', data);
+                console.log('Response structure check:', {
+                    hasSuccess: data && 'success' in data,
+                    successValue: data ? data.success : null,
+                    hasData: data && 'data' in data,
+                    hasFragments: data && 'fragments' in data,
+                    dataType: data && data.data ? typeof data.data : 'undefined',
+                    fullData: data
+                });
 
                 // Validate data exists
                 if (!data) {
@@ -933,16 +972,16 @@
                     return;
                 }
 
-                // WooCommerce native format: { fragments: {...}, cart_hash: '...' }
-                // This is the standard format, not wrapped in success/data
-                if (data.fragments && typeof data.fragments === 'object') {
-                    fragmentsObject = data.fragments;
-                    cartHash = data.cart_hash || null;
-                } else if (data.success && data.data && typeof data.data === 'object') {
-                    // Fallback: Standard format: { success: true, data: { fragments, cart_hash, failed_items } }
+                // Try to extract fragments from different response formats
+                if (data.success && data.data && typeof data.data === 'object') {
+                    // Standard format: { success: true, data: { fragments, cart_hash, failed_items } }
                     fragmentsObject = data.data.fragments || null;
                     cartHash = data.data.cart_hash || null;
                     failedItems = data.data.failed_items || [];
+                } else if (data.fragments && typeof data.fragments === 'object') {
+                    // Direct format: { fragments: {...}, cart_hash: '...' }
+                    fragmentsObject = data.fragments;
+                    cartHash = data.cart_hash || null;
                 }
 
                 if (fragmentsObject && typeof fragmentsObject === 'object' && Object.keys(fragmentsObject).length > 0) {
@@ -952,14 +991,15 @@
                         window.jQuery(document.body).trigger('wc_fragment_refresh');
                         window.jQuery(document.body).trigger('added_to_cart', [fragmentsObject, cartHash, null]);
                     }
-                    
-                    // Update WooCommerce Blocks cart store with fragments
-                    this.updateBlocksCartStore(fragmentsObject, cartHash);
 
                     // Show success
                     this.onBundleAddedSuccess();
+
+                    if (failedItems && failedItems.length > 0) {
+                        console.warn('Some items failed to add:', failedItems);
+                    }
                 } else {
-                    console.error('MMB: No valid fragments in response. Full response:', data);
+                    console.error('No valid fragments in response. Full response:', data);
                     MMBDialog.error('Error', 'Failed to add products to cart - invalid response from server');
                     this.resetAddToCartButtons();
                 }
@@ -971,67 +1011,6 @@
                     'An unexpected error occurred while adding products to cart. Please try again.'
                 );
                 this.resetAddToCartButtons();
-            }
-        },
-        
-        /**
-         * Update WooCommerce Blocks cart store
-         */
-        updateBlocksCartStore(fragments, cartHash) {
-            if (!window.wp || !window.wp.data) {
-                return;
-            }
-            
-            try {
-                const dispatch = window.wp.data.dispatch('wc/store/cart');
-                
-                if (dispatch) {
-                    // Invalidate all cart-related selectors to force complete refresh
-                    if (typeof dispatch.invalidateResolutionForStoreSelector === 'function') {
-                        dispatch.invalidateResolutionForStoreSelector('getCartData');
-                        dispatch.invalidateResolutionForStoreSelector('getCartTotals');
-                        dispatch.invalidateResolutionForStoreSelector('getCartItems');
-                        dispatch.invalidateResolutionForStoreSelector('getCartCoupons');
-                    }
-                    
-                    // If there's a refreshCart method, use it
-                    if (typeof dispatch.refreshCart === 'function') {
-                        dispatch.refreshCart();
-                    }
-                    
-                    // Trigger WooCommerce Blocks events immediately
-                    this.triggerCustomEvent('wc-blocks_update_cart');
-                    this.triggerCustomEvent('wc-blocks_cart_update');
-                    
-                    // Force refresh after delays to ensure coupon is included
-                    // First refresh after short delay
-                    setTimeout(() => {
-                        if (dispatch && typeof dispatch.invalidateResolutionForStoreSelector === 'function') {
-                            dispatch.invalidateResolutionForStoreSelector('getCartData');
-                            dispatch.invalidateResolutionForStoreSelector('getCartTotals');
-                            dispatch.invalidateResolutionForStoreSelector('getCartCoupons');
-                        }
-                        this.triggerCustomEvent('wc_fragment_refresh');
-                    }, 150);
-                    
-                    // Second refresh after medium delay to ensure server has processed coupon
-                    setTimeout(() => {
-                        if (dispatch && typeof dispatch.invalidateResolutionForStoreSelector === 'function') {
-                            dispatch.invalidateResolutionForStoreSelector('getCartData');
-                            dispatch.invalidateResolutionForStoreSelector('getCartTotals');
-                        }
-                        this.triggerCustomEvent('wc-blocks_update_cart');
-                    }, 400);
-                    
-                    // Final refresh after longer delay to catch any late updates
-                    setTimeout(() => {
-                        if (dispatch && typeof dispatch.invalidateResolutionForStoreSelector === 'function') {
-                            dispatch.invalidateResolutionForStoreSelector('getCartData');
-                        }
-                    }, 800);
-                }
-            } catch(e) {
-                // Silently fail - block cart will update via fragments
             }
         },
         
@@ -1057,10 +1036,12 @@
             
             // Handle cart behavior
             if (this.cartBehavior === 'redirect') {
+                console.log('Redirecting to cart page...');
                 setTimeout(() => {
                     window.location.href = mmb_frontend.cart_url || (typeof wc_add_to_cart_params !== 'undefined' ? wc_add_to_cart_params.cart_url : '/cart');
                 }, 500);
             } else {
+                console.log('Opening sidecart...');
                 
                 // Reset buttons after 3 seconds
                 setTimeout(() => {
@@ -1096,8 +1077,11 @@
          * Trigger sidecart events
          */
         triggerSideCartEvents() {
+            console.log('Triggering sidecart events...');
+            
             // FunnelKit Cart (WooFunnels) - PRIORITY
             if (typeof wfacp_frontend !== 'undefined' || document.querySelector('.wcf-cart-slide-out') || document.querySelector('#wcf-quick-view-content')) {
+                console.log('FunnelKit detected, triggering...');
                 this.triggerCustomEvent('wc_fragments_loaded');
                 this.triggerCustomEvent('wc_fragment_refresh');
                 this.triggerCustomEvent('updated_wc_div');
@@ -1110,6 +1094,7 @@
             
             // Side Cart for WooCommerce by XooIt
             if (typeof xoo_wsc_cart !== 'undefined' || document.querySelector('.xoo-wsc-container')) {
+                console.log('XooIt Side Cart detected');
                 this.triggerCustomEvent('xoo_wsc_cart_updated');
                 const xooTrigger = document.querySelector('.xoo-wsc-basket');
                 if (xooTrigger) xooTrigger.click();
@@ -1125,9 +1110,19 @@
             this.triggerCustomEvent('wc-blocks_added_to_cart');
             this.triggerCustomEvent('wc-blocks_update_cart');
             
-            // Update WooCommerce Blocks cart store (using the method that handles it properly)
-            // This will be called with fragments from the response, but we also trigger it here as fallback
-            this.updateBlocksCartStore(null, null);
+            if (window.wp && window.wp.data && window.wp.data.dispatch) {
+                try {
+                    const store = window.wp.data.dispatch('wc/store/cart');
+                    if (store && typeof store.receiveCart === 'function') {
+                        console.log('Triggering WooCommerce Blocks cart update');
+                        setTimeout(() => {
+                            this.triggerCustomEvent('wc-blocks_update_cart');
+                        }, 100);
+                    }
+                } catch(e) {
+                    console.log('WooCommerce Blocks store not available');
+                }
+            }
             
             // Try to open sidecart
             setTimeout(() => {
@@ -1145,6 +1140,9 @@
          */
         updateSidecartPrices() {
             // This will be called after sidecart opens to update prices
+            console.log('MMB: Updating sidecart prices...');
+            
+            // Wait for sidecart to be fully loaded
             // Sidecart will update naturally via WooCommerce fragments
         },
         
@@ -1175,17 +1173,20 @@
             for (const selector of cartTriggers) {
                 const trigger = document.querySelector(selector);
                 if (trigger) {
+                    console.log('Found cart trigger:', selector);
                     trigger.click();
                     return;
                 }
             }
             
+            console.log('No sidecart trigger found, showing notification');
             this.showSuccessNotification();
             
             // Final fallback: WooCommerce Blocks mini cart
             setTimeout(() => {
                 const blockCartButton = document.querySelector('.wp-block-woocommerce-mini-cart button, button.wc-block-mini-cart__button');
                 if (blockCartButton && !blockCartButton.classList.contains('mmb-final-attempt')) {
+                    console.log('Final attempt: Clicking WooCommerce Blocks cart button');
                     blockCartButton.classList.add('mmb-final-attempt');
                     blockCartButton.click();
                     setTimeout(() => {
@@ -1299,5 +1300,5 @@
     } else {
         MMB_Frontend.init();
     }
-
+    
 })();
