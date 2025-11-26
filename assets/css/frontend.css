@@ -1256,3 +1256,19 @@
         display: none !important;
     }
 }
+
+/* =====================================================
+   Discounted price helpers (sidecart + checkout)
+   ===================================================== */
+.mmb-original-price {
+    text-decoration: line-through;
+    opacity: 0.6;
+    margin-right: 6px;
+    display: inline-block;
+}
+
+.mmb-discounted-price {
+    color: #4caf50;
+    font-weight: 600;
+    display: inline-block;
+}

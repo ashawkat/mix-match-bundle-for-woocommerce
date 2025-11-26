@@ -167,8 +167,14 @@
          */
         init() {
             this.cacheDom();
+            if (!this.wrapper) {
+                return;
+            }
             this.bindEvents();
+            this.bindSidecartSyncEvents();
             this.preventWooCommerceRedirect();
+            this.cleanupWooAddedToCartLinks();
+            this.syncSidecartPrices();
             console.log('MMB Frontend initialized');
         },
         
@@ -217,6 +223,8 @@
             // Get settings
             this.cartBehavior = this.wrapper.dataset.cartBehavior || 'sidecart';
             console.log('Cart behavior set to:', this.cartBehavior);
+
+            this.storeOriginalButtonLabels();
             
             // Apply custom colors
             this.applyCustomColors();
@@ -326,6 +334,337 @@
             if (this.mobileAddBtn) {
                 this.mobileAddBtn.addEventListener('click', () => this.addBundleToCart());
             }
+        },
+
+        /**
+         * Capture original text for Woo add-to-cart buttons to restore later
+         */
+        storeOriginalButtonLabels() {
+            if (!this.wrapper) {
+                return;
+            }
+            const buttons = this.wrapper.querySelectorAll('.add_to_cart_button');
+            buttons.forEach((btn) => {
+                if (!btn.dataset.mmbOriginalText) {
+                    btn.dataset.mmbOriginalText = btn.textContent.trim();
+                }
+            });
+        },
+
+        /**
+         * Remove WooCommerce "View cart" links injected after AJAX add-to-cart
+         */
+        cleanupWooAddedToCartLinks() {
+            if (!this.wrapper) {
+                return;
+            }
+            const addedLinks = this.wrapper.querySelectorAll('a.added_to_cart');
+            addedLinks.forEach(link => link.remove());
+
+            const buttons = this.wrapper.querySelectorAll('.add_to_cart_button.added');
+            buttons.forEach(button => {
+                button.classList.remove('added');
+                if (button.dataset.mmbOriginalText) {
+                    button.textContent = button.dataset.mmbOriginalText;
+                }
+            });
+        },
+
+        /**
+         * Listen for WooCommerce fragment refreshes to resync prices in sidecart
+         */
+        bindSidecartSyncEvents() {
+            if (!document || !document.body) {
+                return;
+            }
+
+            const events = [
+                'wc_fragments_refreshed',
+                'fkcart_fragments_refreshed',
+                'fkcart_fragments_loaded',
+                'fkcart_update_side_cart',
+                'fkcart_cart_open',
+                'fkcart_cart_updated',
+                'fkcart_after_cart_items',
+                'removed_from_cart'
+            ];
+
+            const handler = () => {
+                window.clearTimeout(this.sidecartSyncTimer);
+                this.sidecartSyncTimer = window.setTimeout(() => this.syncSidecartPrices(), 120);
+            };
+
+            events.forEach(eventName => {
+                document.body.addEventListener(eventName, handler);
+            });
+        },
+
+        /**
+         * Apply WooCommerce fragment replacements without jQuery.
+         */
+        applyFragments(fragments) {
+            if (!fragments || typeof fragments !== 'object') {
+                return;
+            }
+
+            Object.keys(fragments).forEach(selector => {
+                const html = fragments[selector];
+                if (typeof html !== 'string') {
+                    return;
+                }
+
+                const target = document.querySelector(selector);
+                if (!target) {
+                    return;
+                }
+
+                target.outerHTML = html;
+            });
+        },
+
+        /**
+         * Locate FunnelKit cart item node by cart key (their markup sometimes adds whitespace)
+         */
+        findSidecartItem(cartKey) {
+            if (!cartKey) {
+                return null;
+            }
+
+            const normalizedKey = String(cartKey).trim();
+            const selectors = [
+                `.fkcart--item[data-key="${normalizedKey}"]`,
+                `.woocommerce-mini-cart-item[data-cart_item_key="${normalizedKey}"]`,
+                `.woocommerce-mini-cart-item[data-key="${normalizedKey}"]`,
+                `[data-key="${normalizedKey}"]`
+            ];
+
+            for (const selector of selectors) {
+                const node = document.querySelector(selector);
+                if (node) {
+                    return node;
+                }
+            }
+
+            const fallbackNodes = document.querySelectorAll('[data-key], [data-cart_item_key]');
+            for (const node of fallbackNodes) {
+                const attrKey = (node.getAttribute('data-key') || node.getAttribute('data-cart_item_key') || '').trim();
+                if (attrKey === normalizedKey) {
+                    return node;
+                }
+            }
+
+            return null;
+        },
+
+        /**
+         * Fetch discounted markup for cart items and update the sidecart DOM
+         */
+        async syncSidecartPrices() {
+            if (typeof mmb_frontend === 'undefined' || !mmb_frontend.ajaxurl) {
+                return;
+            }
+            try {
+                const params = new URLSearchParams({
+                    action: 'mmb_get_bundle_prices',
+                    nonce: mmb_frontend.nonce || ''
+                });
+                const response = await fetch(mmb_frontend.ajaxurl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params
+                });
+                const data = await response.json();
+                if (!data.success || !data.data) {
+                    return;
+                }
+                const payload = data.data;
+                const itemMap = payload.items || {};
+                Object.entries(itemMap).forEach(([cartKey, markup]) => {
+                    const itemNode = this.findSidecartItem(cartKey);
+                    if (!itemNode || !markup || !markup.price_html) {
+                        return;
+                    }
+
+                    const priceNode = itemNode.querySelector('.fkcart-item-price');
+                    if (priceNode) {
+                        priceNode.innerHTML = markup.price_html;
+                        priceNode.classList.add('mmb-price-synced');
+                    }
+
+                    const quantityNode = itemNode.querySelector('.quantity');
+                    if (quantityNode) {
+                        const qtyValue = Number(markup.quantity) || Number(quantityNode.dataset.quantity) || Number(quantityNode.textContent) || 1;
+                        quantityNode.innerHTML = `${qtyValue} × ${markup.price_html}`;
+                    }
+                });
+                this.updateSidecartSummary(payload);
+                this.updateDefaultMiniCart(payload);
+                this.updateBlocksMiniCart(payload);
+            } catch (error) {
+                console.error('MMB: Failed to sync sidecart prices', error);
+            }
+        },
+
+        /**
+         * Update subtotal and discount rows inside the order summary
+         */
+        updateSidecartSummary(bundleData) {
+            if (!bundleData || !bundleData.totals) {
+                return;
+            }
+
+            const totals = bundleData.totals;
+            const formatted = bundleData.totals_formatted || {};
+            const subtotalValue = formatted.discounted || formatted.original;
+            const summaryContainer = document.querySelector('.fkcart-order-summary-container');
+
+            if (subtotalValue) {
+                const subtotalNode = document.querySelector('.fkcart-order-summary .fkcart-subtotal-wrap .fkcart-summary-amount');
+                if (subtotalNode) {
+                    subtotalNode.innerHTML = `<strong>${subtotalValue}</strong>`;
+                }
+            }
+
+            if (!summaryContainer) {
+                return;
+            }
+
+            const discountAmount = Number(totals.discount_amount) || 0;
+            const discountValue = formatted.discount || '';
+            let discountRow = summaryContainer.querySelector('.mmb-bundle-discount');
+
+            if (discountAmount > 0 && discountValue) {
+                if (!discountRow) {
+                    discountRow = document.createElement('div');
+                    discountRow.className = 'fkcart-summary-line-item mmb-bundle-discount';
+                    const discountLabel = (typeof mmb_frontend !== 'undefined' && mmb_frontend.discount_label) ? mmb_frontend.discount_label : 'Bundle Discount';
+                    discountRow.innerHTML = `
+                        <div class="fkcart-summary-text">${discountLabel}</div>
+                        <div class="fkcart-summary-amount"><span class="amount"></span></div>
+                    `;
+                    const subtotalRow = summaryContainer.querySelector('.fkcart-subtotal-wrap');
+                    if (subtotalRow && subtotalRow.nextSibling) {
+                        summaryContainer.insertBefore(discountRow, subtotalRow.nextSibling);
+                    } else {
+                        summaryContainer.appendChild(discountRow);
+                    }
+                }
+                const amountNode = discountRow.querySelector('.fkcart-summary-amount .amount') || discountRow.querySelector('.fkcart-summary-amount');
+                if (amountNode) {
+                    amountNode.innerHTML = discountValue;
+                }
+            } else if (discountRow) {
+                discountRow.remove();
+            }
+        },
+
+        /**
+         * Update WooCommerce Blocks mini cart subtotal/discount
+         */
+        updateBlocksMiniCart(bundleData) {
+            if (!bundleData || !bundleData.totals) {
+                return;
+            }
+
+            const formatted = bundleData.totals_formatted || {};
+            const subtotalValue = formatted.discounted || formatted.original;
+            const discountAmount = Number(bundleData.totals.discount_amount) || 0;
+            const discountValue = formatted.discount || '';
+            const discountLabel = (typeof mmb_frontend !== 'undefined' && mmb_frontend.discount_label) ? mmb_frontend.discount_label : 'Bundle Discount';
+
+            const subtotalRows = document.querySelectorAll('.wc-block-mini-cart__footer-subtotal, .wc-block-components-totals-item--subtotal');
+            if (!subtotalRows.length) {
+                return;
+            }
+
+            subtotalRows.forEach(subtotalRow => {
+                const amountNode = subtotalRow.querySelector('.wc-block-components-formatted-money-amount, .amount');
+                if (amountNode && subtotalValue) {
+                    amountNode.innerHTML = subtotalValue;
+                }
+
+                const container = subtotalRow.parentElement;
+                if (!container) {
+                    return;
+                }
+
+                let discountRow = container.querySelector('.mmb-block-discount');
+
+                if (discountAmount > 0 && discountValue) {
+                    if (!discountRow) {
+                        discountRow = document.createElement('div');
+                        discountRow.className = 'wc-block-components-totals-item mmb-block-discount';
+                        discountRow.innerHTML = `
+                            <span class="wc-block-components-totals-item__label">${discountLabel}</span>
+                            <span class="wc-block-components-totals-item__value"><span class="wc-block-components-formatted-money-amount"></span></span>
+                        `;
+                        if (subtotalRow.nextSibling) {
+                            container.insertBefore(discountRow, subtotalRow.nextSibling);
+                        } else {
+                            container.appendChild(discountRow);
+                        }
+                    }
+
+                    const discountAmountNode = discountRow.querySelector('.wc-block-components-formatted-money-amount');
+                    if (discountAmountNode) {
+                        discountAmountNode.innerHTML = discountValue;
+                    }
+                } else if (discountRow) {
+                    discountRow.remove();
+                }
+            });
+        },
+
+        /**
+         * Update the default WooCommerce mini-cart totals (themes using widget markup)
+         */
+        updateDefaultMiniCart(bundleData) {
+            if (!bundleData || !bundleData.totals) {
+                return;
+            }
+
+            const totalRows = document.querySelectorAll('.woocommerce-mini-cart__total');
+            if (!totalRows.length) {
+                return;
+            }
+
+            const formatted = bundleData.totals_formatted || {};
+            const subtotalValue = formatted.discounted || formatted.original;
+            const discountAmount = Number(bundleData.totals.discount_amount) || 0;
+            const discountValue = formatted.discount || '';
+            const discountLabel = (typeof mmb_frontend !== 'undefined' && mmb_frontend.discount_label) ? mmb_frontend.discount_label : 'Bundle Discount';
+
+            totalRows.forEach(totalRow => {
+                const amountNode = totalRow.querySelector('.amount, .woocommerce-Price-amount');
+                if (amountNode && subtotalValue) {
+                    amountNode.innerHTML = subtotalValue;
+                }
+
+                const container = totalRow.parentElement || totalRow;
+                let discountRow = container.querySelector('.woocommerce-mini-cart__discount.mmb-mini-cart-discount');
+
+                if (discountAmount > 0 && discountValue) {
+                    if (!discountRow) {
+                        discountRow = document.createElement('p');
+                        discountRow.className = 'woocommerce-mini-cart__discount mmb-mini-cart-discount';
+                        discountRow.innerHTML = `<strong>${discountLabel}:</strong> <span class="amount"></span>`;
+                        if (totalRow.nextSibling) {
+                            totalRow.parentNode.insertBefore(discountRow, totalRow.nextSibling);
+                        } else {
+                            container.appendChild(discountRow);
+                        }
+                    }
+
+                    const discountAmountNode = discountRow.querySelector('.amount') || discountRow;
+                    if (discountAmountNode) {
+                        discountAmountNode.innerHTML = discountValue;
+                    }
+                } else if (discountRow) {
+                    discountRow.remove();
+                }
+            });
         },
         
         /**
@@ -846,14 +1185,15 @@
             const product = products[index];
             const productId = product.id || product.product_id;
             const variationId = product.variation_id || 0;
+            const productQuantity = product.quantity || 1;
             
-            console.log(`Adding product ${index + 1} of ${products.length}: Product ID ${productId}${variationId ? ', Variation ID ' + variationId : ''}`);
+            console.log(`Adding product ${index + 1} of ${products.length}: Product ID ${productId}${variationId ? ', Variation ID ' + variationId : ''}, Quantity: ${productQuantity}`);
             
             try {
                 const params = new URLSearchParams({
                     action: 'woocommerce_ajax_add_to_cart',
                     product_id: variationId || productId,
-                    quantity: 1
+                    quantity: productQuantity
                 });
                 
                 if (variationId) {
@@ -873,7 +1213,17 @@
                 console.log(`Product ${productId} response:`, data);
                 
                 if (data.success) {
-                    console.log(`Product ${productId}${variationId ? ' (variation ' + variationId + ')' : ''} added successfully`);
+                    console.log(`Product ${productId}${variationId ? ' (variation ' + variationId + ')' : ''} added successfully with quantity ${productQuantity}`);
+                    
+                    // Update cart fragments if provided
+                    if (data.data && data.data.fragments) {
+                        const fragmentButton = document.querySelector(`[data-product-id="${productId}"]`);
+                        const buttonPayload = (window.jQuery && fragmentButton) ? window.jQuery(fragmentButton) : fragmentButton;
+
+                        this.triggerCustomEvent('wc_fragment_refresh', [data.data.fragments]);
+                        this.triggerCustomEvent('added_to_cart', [data.data.fragments, data.data.cart_hash, buttonPayload]);
+                        this.applyFragments(data.data.fragments);
+                    }
                 } else {
                     console.error(`Product ${productId} failed:`, data.data);
                 }
@@ -898,6 +1248,8 @@
                 this.mobileAddBtn.textContent = '✓ Added!';
                 this.mobileAddBtn.classList.add('mmb-success');
             }
+
+            this.cleanupWooAddedToCartLinks();
             
             // Trigger WooCommerce events
             this.triggerCustomEvent('wc_fragment_refresh');
@@ -915,10 +1267,12 @@
                 // Reset buttons after 3 seconds
                 setTimeout(() => {
                     this.resetAddToCartButtons();
+                    this.cleanupWooAddedToCartLinks();
                 }, 3000);
                 
                 // Trigger sidecart events
                 this.triggerSideCartEvents();
+                setTimeout(() => this.syncSidecartPrices(), 250);
                 
                 // Update mobile sticky cart
                 this.updateMobileStickyCart();
@@ -996,6 +1350,31 @@
             setTimeout(() => {
                 this.tryOpenSideCart();
             }, 300);
+            
+            // Update sidecart prices after it opens
+            setTimeout(() => {
+                this.updateSidecartPrices();
+            }, 500);
+        },
+        
+        /**
+         * Update sidecart prices with bundle discounts
+         */
+        updateSidecartPrices() {
+            // This will be called after sidecart opens to update prices
+            console.log('MMB: Updating sidecart prices...');
+            
+            // Wait for sidecart to be fully loaded
+            const checkSidecart = setInterval(() => {
+                const sidecart = document.querySelector('.fkcart-modal-container, .fkcart-item-wrap');
+                if (sidecart) {
+                    clearInterval(checkSidecart);
+                    this.syncSidecartPrices();
+                }
+            }, 100);
+            
+            // Timeout after 3 seconds
+            setTimeout(() => clearInterval(checkSidecart), 3000);
         },
         
         /**
@@ -1114,9 +1493,14 @@
         /**
          * Trigger custom event
          */
-        triggerCustomEvent(eventName, detail = {}) {
-            const event = new CustomEvent(eventName, { detail, bubbles: true });
+        triggerCustomEvent(eventName, detail = []) {
+            const payload = Array.isArray(detail) ? detail : (detail ? [detail] : []);
+            const event = new CustomEvent(eventName, { detail: payload, bubbles: true });
             document.body.dispatchEvent(event);
+
+            if (window.jQuery && window.jQuery.fn && typeof window.jQuery(document.body).trigger === 'function') {
+                window.jQuery(document.body).trigger(eventName, payload);
+            }
         },
         
         /**
@@ -1147,5 +1531,5 @@
     } else {
         MMB_Frontend.init();
     }
-
+    
 })();

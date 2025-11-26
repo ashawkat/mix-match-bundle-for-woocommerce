@@ -4,7 +4,7 @@ Tags: woocommerce, product bundles, discounts, tiered pricing, mix and match
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 5.0
@@ -227,6 +227,12 @@ This is a full-featured plugin. We may release additional features based on user
 10. **Shortcode Management** - Easy copy shortcodes from bundle list
 
 == Changelog ==
+
+= 1.0.1 - 2025-11-26 =
+* Added native support for FunnelKit, WooCommerce default, and WooCommerce Blocks sidecarts so discounted prices and bundle fees stay in sync everywhere.
+* Synced bundle discount markup into Woo fragments and AJAX payloads to prevent stale totals.
+* Removed development logging/debug helpers flagged by Plugin Check.
+* Updated translation template/files and localized “Bundle Discount” label for new UI elements.
 
 = 1.0.0 - 2024-11-14 =
 * 🎉 Initial release

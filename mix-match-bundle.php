@@ -3,7 +3,7 @@
  * Plugin Name: Mix & Match Bundle for WooCommerce
  * Plugin URI: https://demo.betatech.co/mix-match-bundle
  * Description: Create customizable bundle promotions with tiered discounts based on quantity
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author: Betatech
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MMB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MMB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'MMB_VERSION', '1.0.0' );
+define( 'MMB_VERSION', '1.0.1' );
 define( 'MMB_DB_VERSION', '2.1' ); // Database version for schema updates
 
 /**
@@ -299,10 +299,21 @@ class Mix_Match_Bundle {
         wp_enqueue_style( 'mix-match-frontend', MMB_PLUGIN_URL . 'assets/css/frontend.css', [], MMB_VERSION );
         wp_enqueue_script( 'mix-match-frontend', MMB_PLUGIN_URL . 'assets/js/frontend.js', [], MMB_VERSION, true );
         
+        // Get bundle discount info for JavaScript
+        $bundle_discount_data = [];
+        if ( WC()->session ) {
+            $session_data = WC()->session->get( 'mmb_bundle_discount' );
+            if ( $session_data && ! empty( $session_data['product_ids'] ) ) {
+                $bundle_discount_data = $session_data;
+            }
+        }
+        
         wp_localize_script( 'mix-match-frontend', 'mmb_frontend', [
             'nonce' => wp_create_nonce( 'mmb_frontend_nonce' ),
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
             'cart_url' => wc_get_cart_url(),
+            'bundle_discount' => $bundle_discount_data,
+            'discount_label' => __( 'Bundle Discount', 'mix-match-bundle' ),
         ]);
     }
     
@@ -728,24 +739,46 @@ function mmb_wc_ajax_add_to_cart() {
         wp_send_json_error( sprintf( __( 'Product cannot be purchased: %s', 'mix-match-bundle' ), ( $variation_id ? "Variation $variation_id" : "Product $product_id" ) ) );
     }
     
+    // Get bundle ID from session to mark items as part of a bundle
+    $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
+    $bundle_id = $session_data && isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+    
+    // Add cart item data to identify bundle items
+    // Don't use unique keys - let WooCommerce combine same products naturally
+    $cart_item_data = [
+        'mmb_bundle_item' => true,
+        'mmb_bundle_id' => $bundle_id, // Store bundle ID for identification
+    ];
+    
     // Add product to cart (with variation support)
     if ( $variation_id ) {
         // For variations, we need to pass the parent product ID and variation ID separately
-        $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id );
+        $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, [], $cart_item_data );
     } else {
         // Simple product
-        $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity );
+        $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, 0, [], $cart_item_data );
     }
     
     if ( $cart_item_key ) {
         // Get cart count
         $cart_count = WC()->cart->get_cart_contents_count();
         
+        // Calculate cart totals to ensure fees are applied
+        // This is critical - must calculate before getting fragments
+        WC()->cart->calculate_fees();
+        WC()->cart->calculate_totals();
+        
+        // Get cart fragments for WooCommerce cart updates
+        // This will trigger our filters when fragments are generated
+        $fragments = apply_filters( 'woocommerce_add_to_cart_fragments', [] );
+        
         wp_send_json_success( [
             'cart_item_key' => $cart_item_key,
             'product_id' => $product_id,
             'variation_id' => $variation_id,
             'cart_count' => $cart_count,
+            'fragments' => $fragments,
+            'cart_hash' => WC()->cart->get_cart_hash(),
         ] );
     } else {
         wp_send_json_error( __( 'Failed to add product to cart', 'mix-match-bundle' ) );
