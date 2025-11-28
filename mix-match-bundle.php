@@ -401,22 +401,51 @@ class Mix_Match_Bundle {
         try {
             require_once ABSPATH . 'wp-admin/includes/upgrade.php';
             dbDelta( mmb_get_table_schema_sql() );
+            
+            // Log success for debugging
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'MMB: Database upgrade successful' );
+            }
         } catch ( Exception $e ) {
-            // Silent fail to avoid breaking activation.
+            // Log error for debugging
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'MMB Database upgrade error: ' . $e->getMessage() );
+            }
+            
+            // Store error for admin notice
+            update_option( 'mmb_db_upgrade_error', $e->getMessage() );
         }
     }
     
     public function activate_plugin() {
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        dbDelta( mmb_get_table_schema_sql() );
-        
-        // Run upgrade check
-        $this->maybe_upgrade_database();
-        
-        // Set initial database version
-        update_option( 'mmb_db_version', MMB_DB_VERSION );
+        try {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            dbDelta( mmb_get_table_schema_sql() );
+            
+            // Run upgrade check
+            $this->maybe_upgrade_database();
+            
+            // Set initial database version
+            update_option( 'mmb_db_version', MMB_DB_VERSION );
 
-        flush_rewrite_rules();
+            flush_rewrite_rules();
+            
+            // Log success for debugging
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'MMB: Plugin activation successful' );
+            }
+        } catch ( Exception $e ) {
+            // Log error for debugging
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'MMB Plugin activation error: ' . $e->getMessage() );
+            }
+            
+            // Store error for admin notice
+            update_option( 'mmb_activation_error', $e->getMessage() );
+            
+            // Re-throw to let WordPress handle the error
+            throw $e;
+        }
     }
 }
 
@@ -437,6 +466,9 @@ add_action( 'wp_ajax_woocommerce_ajax_add_to_cart', 'mmb_wc_ajax_add_to_cart' );
 add_action( 'wp_ajax_nopriv_woocommerce_ajax_add_to_cart', 'mmb_wc_ajax_add_to_cart' );
 add_action( 'wp_ajax_mmb_wc_ajax_add_to_cart', 'mmb_wc_ajax_add_to_cart' );
 add_action( 'wp_ajax_nopriv_mmb_wc_ajax_add_to_cart', 'mmb_wc_ajax_add_to_cart' );
+
+// AJAX handler for debug function
+add_action( 'wp_ajax_mmb_debug_coupon_state', 'mmb_debug_coupon_state' );
 
 function mmb_save_bundle() {
     check_ajax_referer( 'mmb_admin_nonce', 'nonce' );
@@ -690,6 +722,7 @@ function mmb_get_products_by_ids() {
 }
 
 function mmb_add_bundle_to_cart() {
+    // Verify nonce for security
     check_ajax_referer( 'mmb_frontend_nonce', 'nonce' );
     
     $bundle_id = isset( $_POST['bundle_id'] ) ? intval( wp_unslash( $_POST['bundle_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -722,8 +755,8 @@ function mmb_add_bundle_to_cart() {
     $product_ids = [];
     $variation_ids = [];
     foreach ( $bundle_items as $item ) {
-        $product_id = isset( $item['product_id'] ) ? intval( $item['product_id'] ) : ( isset( $item['id'] ) ? intval( $item['id'] ) : 0 );
-        $variation_id = isset( $item['variation_id'] ) ? intval( $item['variation_id'] ) : 0;
+        $product_id   = isset( $item['product_id'] ) ? absint( $item['product_id'] ) : ( isset( $item['id'] ) ? absint( $item['id'] ) : 0 );
+        $variation_id = isset( $item['variation_id'] ) ? absint( $item['variation_id'] ) : 0;
         
         if ( $product_id ) {
             $product_ids[] = $product_id;
@@ -734,16 +767,57 @@ function mmb_add_bundle_to_cart() {
     }
     
     // Store NEW bundle info in session
-    WC()->session->set( 'mmb_bundle_discount', [
-        'bundle_id' => $bundle_id,
-        'product_ids' => $product_ids,
-        'variation_ids' => $variation_ids,
-        'discount_amount' => $discount_amount,
-    ]);
+    if ( WC()->session ) {
+        WC()->session->set( 'mmb_bundle_discount', [
+            'bundle_id' => $bundle_id,
+            'discount_amount' => $discount_amount,
+            'product_ids' => $product_ids,
+            'coupon_code' => null, // Will be set after coupon creation
+        ] );
+        
+        // Send success response immediately - don't wait for coupon creation
+        wp_send_json_success( [
+            'success' => true,
+            'message' => 'Bundle items stored in session',
+            'data' => [
+                'bundle_id' => $bundle_id,
+                'product_ids' => $product_ids,
+                'discount_amount' => $discount_amount,
+            ]
+        ] );
+    }
     
-    // Force save session data
-    if ( method_exists( WC()->session, 'save_data' ) ) {
-        WC()->session->save_data();
+    if ( empty( $product_ids ) ) {
+        // Send proper response structure for empty product list
+        wp_send_json_success( [
+            'success' => false,
+            'message' => 'No products available to add to bundle',
+            'data' => [
+                'bundle_id' => 0,
+                'product_ids' => [],
+                'product_options' => [],
+                'total_price' => 0,
+                'subtotal' => 0,
+                'discount_amount' => 0
+            ]
+        ] );
+        
+        // Debug logging
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'MMB: Empty product list handled properly' );
+            error_log( 'MMB: Response structure: ' . json_encode( [
+                'success' => false,
+                'message' => 'No products available to add to bundle',
+                'data' => [
+                    'bundle_id' => 0,
+                    'product_ids' => [],
+                    'product_options' => [],
+                    'total_price' => 0,
+                    'subtotal' => 0,
+                    'discount_amount' => 0,
+                ]
+            ] ) );
+        }
     }
     
     wp_send_json_success( __( 'Bundle added to session', 'mix-match-bundle' ) );
@@ -757,230 +831,240 @@ function mmb_wc_ajax_add_to_cart() {
         }
         
         // Check if we're adding multiple products (bundle) or single product
-        $products_json = isset( $_POST['products'] ) ? sanitize_textarea_field( wp_unslash( $_POST['products'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $products_json = isset( $_POST['products'] ) ? sanitize_textarea_field( wp_unslash( $_POST['products'] ) ) : '';
     
-    if ( ! empty( $products_json ) ) {
-        // Handle multiple products
-        $products = json_decode( $products_json, true );
-        
-        if ( empty( $products ) || ! is_array( $products ) ) {
-            wp_send_json_error( __( 'Invalid products data', 'mix-match-bundle' ) );
-        }
-
-        // Get discount amount from POST parameter first (most reliable), then fallback to session
-        $discount_amount = isset( $_POST['discount_amount'] ) ? floatval( wp_unslash( $_POST['discount_amount'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-        
-        $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
-        $bundle_id    = $session_data && isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
-        
-        // Use session discount if POST parameter is 0
-        if ( $discount_amount <= 0 && $session_data && isset( $session_data['discount_amount'] ) ) {
-            $discount_amount = floatval( $session_data['discount_amount'] );
-        }
-
-        $added_items = [];
-        $failed_items = [];
-
-        foreach ( $products as $item ) {
-            $product_id   = isset( $item['product_id'] ) ? absint( $item['product_id'] ) : ( isset( $item['id'] ) ? absint( $item['id'] ) : 0 );
-            $variation_id = isset( $item['variation_id'] ) ? absint( $item['variation_id'] ) : 0;
-            $quantity     = isset( $item['quantity'] ) ? absint( $item['quantity'] ) : 1;
-
-            if ( $product_id < 1 ) {
-                $failed_items[] = __( 'Invalid product ID', 'mix-match-bundle' );
-                continue;
+        if ( ! empty( $products_json ) ) {
+            // Handle multiple products
+            $products = json_decode( $products_json, true );
+            
+            if ( empty( $products ) || ! is_array( $products ) ) {
+                wp_send_json_error( __( 'Invalid products data', 'mix-match-bundle' ) );
+            }
+            
+            // Verify nonce for security - only for bundle requests
+            check_ajax_referer( 'mmb_frontend_nonce', 'nonce' );
+            
+            // Get discount amount from POST parameter first (most reliable), then fallback to session
+            $discount_amount = isset( $_POST['discount_amount'] ) ? floatval( wp_unslash( $_POST['discount_amount'] ) ) : 0;
+            
+            $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
+            $bundle_id    = $session_data && isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+            
+            // Use session discount if POST parameter is 0
+            if ( $discount_amount <= 0 && $session_data && isset( $session_data['discount_amount'] ) ) {
+                $discount_amount = floatval( $session_data['discount_amount'] );
             }
 
+            $added_items = [];
+            $failed_items = [];
+
+            foreach ( $products as $item ) {
+                $product_id   = isset( $item['product_id'] ) ? absint( $item['product_id'] ) : ( isset( $item['id'] ) ? absint( $item['id'] ) : 0 );
+                $variation_id = isset( $item['variation_id'] ) ? absint( $item['variation_id'] ) : 0;
+                $quantity     = isset( $item['quantity'] ) ? absint( $item['quantity'] ) : 1;
+
+                if ( $product_id < 1 ) {
+                    $failed_items[] = __( 'Invalid product ID', 'mix-match-bundle' );
+                    continue;
+                }
+
+                $check_id = $variation_id ? $variation_id : $product_id;
+                $product  = wc_get_product( $check_id );
+
+                if ( ! $product || ! $product->is_purchasable() ) {
+                    $failed_items[] = sprintf(
+                        /* translators: %s: Product or variation identifier (e.g., "Product 123" or "Variation 456") */
+                        __( 'Product cannot be purchased: %s', 'mix-match-bundle' ),
+                        ( $variation_id ? "Variation $variation_id" : "Product $product_id" )
+                    );
+                    continue;
+                }
+
+                // Mark item as bundle item - coupon will handle the discount
+                $cart_item_data = [
+                    'mmb_bundle_item' => true,
+                    'mmb_bundle_id'   => $bundle_id,
+                ];
+
+                if ( $variation_id ) {
+                    $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, [], $cart_item_data );
+                } else {
+                    $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, 0, [], $cart_item_data );
+                }
+
+                if ( $cart_item_key ) {
+                    $added_items[] = $cart_item_key;
+                } else {
+                    $failed_items[] = sprintf(
+                        /* translators: %d: Product ID */
+                        __( 'Failed to add product %d', 'mix-match-bundle' ),
+                        $product_id
+                    );
+                }
+            }
+
+            if ( empty( $added_items ) ) {
+                wp_send_json_error( [
+                    'message' => __( 'Failed to add any products to cart', 'mix-match-bundle' ),
+                    'errors' => $failed_items,
+                ] );
+            }
+
+            // Apply bundle coupon if we have bundle data
+            try {
+                if ( $session_data && isset( $session_data['bundle_id'] ) && isset( $session_data['discount_amount'] ) ) {
+                    $bundle_id = intval( $session_data['bundle_id'] );
+                    $discount_amount = floatval( $session_data['discount_amount'] );
+                    
+                    if ( $bundle_id > 0 && $discount_amount > 0 ) {
+                        // Calculate bundle subtotal
+                        $bundle_subtotal = 0;
+                        foreach ( WC()->cart->get_cart() as $item ) {
+                            if ( ! empty( $item['mmb_bundle_item'] ) ) {
+                                $bundle_subtotal += $item['data']->get_price() * $item['quantity'];
+                            }
+                        }
+                        
+                        if ( $bundle_subtotal > 0 ) {
+                            // Get product IDs from session for coupon restriction
+                            $bundle_product_ids = isset( $session_data['product_ids'] ) ? $session_data['product_ids'] : [];
+                            
+                            // Get cart instance to create and apply coupon
+                            if ( ! class_exists( 'MMB_Cart' ) ) {
+                                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                                    error_log( 'MMB: MMB_Cart class not found' );
+                                }
+                            } else {
+                                $cart_handler = MMB_Cart::get_instance();
+                                
+                                if ( method_exists( $cart_handler, 'create_bundle_coupon' ) ) {
+                                    $coupon_code = $cart_handler->create_bundle_coupon( $bundle_id, $discount_amount, $bundle_subtotal, $bundle_product_ids );
+                                    
+                                    // Only proceed if coupon was created successfully
+                                    if ( ! empty( $coupon_code ) ) {
+                                        // Verify coupon exists before applying
+                                        $coupon_id = wc_get_coupon_id_by_code( $coupon_code );
+                                        
+                                        if ( $coupon_id ) {
+                                            // Apply coupon if not already applied
+                                            if ( ! WC()->cart->has_discount( $coupon_code ) ) {
+                                                WC()->cart->apply_coupon( $coupon_code );
+                                                
+                                                // Remove any error notices about our bundle coupon
+                                                if ( method_exists( $cart_handler, 'remove_bundle_coupon_notices' ) ) {
+                                                    $cart_handler->remove_bundle_coupon_notices();
+                                                }
+                                                
+                                                // Update session with coupon code
+                                                $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
+                                                if ( $session_data ) {
+                                                    $session_data['coupon_code'] = $coupon_code;
+                                                    WC()->session->set( 'mmb_bundle_discount', $session_data );
+                                                }
+                                                
+                                                // Recalculate totals immediately after coupon application
+                                                WC()->cart->calculate_totals();
+                                                
+                                                // Debug logging
+                                                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                                                    error_log( 'MMB: Coupon Applied - Code: ' . $coupon_code );
+                                                    error_log( 'MMB: Coupon Amount: ' . $discount_amount );
+                                                    error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch ( Exception $e ) {
+                // Log error for debugging
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( 'MMB Coupon Error: ' . $e->getMessage() );
+                }
+            }
+
+            // Final calculation to ensure all totals are correct (including coupon discount)
+            WC()->cart->calculate_totals();
+
+            // Use WooCommerce's native fragment refresh to ensure compatibility
+            // Fragments will now use the discounted prices we just set
+            $fragments = WC_AJAX::get_refreshed_fragments();
+
+            do_action( 'woocommerce_ajax_added_to_cart', $product_id );
+
+            // Return fragments in the format WooCommerce expects
+            wp_send_json( [
+                'fragments' => $fragments,
+                'cart_hash' => WC()->cart->get_cart_hash(),
+            ] );
+        }
+        
+        // Handle single product (legacy support) - only when no products parameter
+        if ( empty( $_POST['products'] ) ) {
+            // Verify nonce for security
+            check_ajax_referer( 'mmb_frontend_nonce', 'nonce' );
+            
+            $product_id   = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $variation_id = isset( $_POST['variation_id'] ) ? absint( wp_unslash( $_POST['variation_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $quantity     = isset( $_POST['quantity'] ) ? absint( wp_unslash( $_POST['quantity'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            
+            if ( $product_id < 1 ) {
+                wp_send_json_error( __( 'Invalid product ID', 'mix-match-bundle' ) );
+            }
+            
             $check_id = $variation_id ? $variation_id : $product_id;
             $product  = wc_get_product( $check_id );
-
+            
             if ( ! $product || ! $product->is_purchasable() ) {
-                $failed_items[] = sprintf(
-                    /* translators: %s: Product or variation identifier (e.g., "Product 123" or "Variation 456") */
-                    __( 'Product cannot be purchased: %s', 'mix-match-bundle' ),
-                    ( $variation_id ? "Variation $variation_id" : "Product $product_id" )
+                wp_send_json_error(
+                    sprintf(
+                        /* translators: %s: product or variation ID */
+                        __( 'Product cannot be purchased: %s', 'mix-match-bundle' ),
+                        ( $variation_id ? "Variation $variation_id" : "Product $product_id" )
+                    )
                 );
-                continue;
             }
 
-            // Mark item as bundle item - coupon will handle the discount
+            $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
+            $bundle_id    = $session_data && isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+            
             $cart_item_data = [
                 'mmb_bundle_item' => true,
                 'mmb_bundle_id'   => $bundle_id,
             ];
-
+            
             if ( $variation_id ) {
                 $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, [], $cart_item_data );
             } else {
                 $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, 0, [], $cart_item_data );
             }
-
+            
             if ( $cart_item_key ) {
-                $added_items[] = $cart_item_key;
-            } else {
-                $failed_items[] = sprintf(
-                    /* translators: %d: Product ID */
-                    __( 'Failed to add product %d', 'mix-match-bundle' ),
-                    $product_id
-                );
-            }
-        }
+                WC()->cart->calculate_fees();
+                WC()->cart->calculate_totals();
+                do_action( 'woocommerce_ajax_added_to_cart', $product_id );
 
-        if ( empty( $added_items ) ) {
-            wp_send_json_error( [
-                'message' => __( 'Failed to add any products to cart', 'mix-match-bundle' ),
-                'errors' => $failed_items,
-            ] );
-        }
-
-        // Apply bundle coupon if we have bundle data
-        try {
-            if ( $session_data && isset( $session_data['bundle_id'] ) && isset( $session_data['discount_amount'] ) ) {
-                $bundle_id = intval( $session_data['bundle_id'] );
-                $discount_amount = floatval( $session_data['discount_amount'] );
-                
-                if ( $bundle_id > 0 && $discount_amount > 0 ) {
-                    // Calculate bundle subtotal
-                    $bundle_subtotal = 0;
-                    foreach ( WC()->cart->get_cart() as $item ) {
-                        if ( ! empty( $item['mmb_bundle_item'] ) ) {
-                            $bundle_subtotal += $item['data']->get_price() * $item['quantity'];
-                        }
-                    }
-                    
-                    if ( $bundle_subtotal > 0 ) {
-                        // Get product IDs from session for coupon restriction
-                        $bundle_product_ids = isset( $session_data['product_ids'] ) ? $session_data['product_ids'] : [];
-                        
-                        // Get cart instance to create and apply coupon
-                        if ( ! class_exists( 'MMB_Cart' ) ) {
-                            // Class not loaded, skip coupon creation
-                            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                                error_log( 'MMB: MMB_Cart class not found' );
-                            }
-                        } else {
-                            $cart_handler = MMB_Cart::get_instance();
-                            
-                            if ( method_exists( $cart_handler, 'create_bundle_coupon' ) ) {
-                            $coupon_code = $cart_handler->create_bundle_coupon( $bundle_id, $discount_amount, $bundle_subtotal, $bundle_product_ids );
-                            
-                            // Only proceed if coupon was created successfully
-                            if ( ! empty( $coupon_code ) ) {
-                                // Verify coupon exists before applying
-                                $coupon_id = wc_get_coupon_id_by_code( $coupon_code );
-                                if ( $coupon_id ) {
-                                    // Apply coupon if not already applied
-                                    if ( ! WC()->cart->has_discount( $coupon_code ) ) {
-                                        // Apply coupon
-                                        $coupon_applied = WC()->cart->apply_coupon( $coupon_code );
-                                        
-                                        // Verify coupon was applied
-                                        if ( $coupon_applied && WC()->cart->has_discount( $coupon_code ) ) {
-                                            // Remove any error notices about our bundle coupon
-                                            if ( method_exists( $cart_handler, 'remove_bundle_coupon_notices' ) ) {
-                                                $cart_handler->remove_bundle_coupon_notices();
-                                            }
-                                            
-                                            // Recalculate totals immediately after coupon application
-                                            // This ensures the discount is included in cart totals
-                                            WC()->cart->calculate_totals();
-                                        }
-                                    } elseif ( WC()->cart->has_discount( $coupon_code ) ) {
-                                        // Coupon already applied, just recalculate totals
-                                        WC()->cart->calculate_totals();
-                                    }
-                                }
-                            }
-                        }
-                        } // End if class_exists check
-                    }
+                if ( class_exists( 'WC_AJAX' ) ) {
+                    WC_AJAX::get_refreshed_fragments();
+                } else {
+                    wp_send_json_success(
+                        [
+                            'fragments' => [],
+                            'cart_hash' => WC()->cart->get_cart_hash(),
+                        ]
+                    );
                 }
-            }
-        } catch ( Exception $e ) {
-            // Log error but don't break the cart addition
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                error_log( 'MMB Coupon Error: ' . $e->getMessage() );
+            } else {
+                wp_send_json_error( __( 'Failed to add product to cart', 'mix-match-bundle' ) );
             }
         }
-
-        // Final calculation to ensure all totals are correct (including coupon discount)
-        WC()->cart->calculate_totals();
-
-        // Use WooCommerce's native fragment refresh to ensure compatibility
-        // Fragments will now use the discounted prices we just set
-        $fragments = WC_AJAX::get_refreshed_fragments();
-
-        do_action( 'woocommerce_ajax_added_to_cart', $product_id );
-
-        // Return fragments in the format WooCommerce expects
-        wp_send_json( [
-            'fragments' => $fragments,
-            'cart_hash' => WC()->cart->get_cart_hash(),
-        ] );
-    }
-
-    // Handle single product (legacy support)
-    $product_id   = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-    $variation_id = isset( $_POST['variation_id'] ) ? absint( wp_unslash( $_POST['variation_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-    $quantity     = isset( $_POST['quantity'] ) ? absint( wp_unslash( $_POST['quantity'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Missing
-    
-    if ( $product_id < 1 ) {
-        wp_send_json_error( __( 'Invalid product ID', 'mix-match-bundle' ) );
-    }
-    
-    $check_id = $variation_id ? $variation_id : $product_id;
-    $product  = wc_get_product( $check_id );
-    
-    if ( ! $product || ! $product->is_purchasable() ) {
-        wp_send_json_error(
-            sprintf(
-                /* translators: %s: product or variation ID */
-                __( 'Product cannot be purchased: %s', 'mix-match-bundle' ),
-                ( $variation_id ? "Variation $variation_id" : "Product $product_id" )
-            )
-        );
-    }
-
-    $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
-    $bundle_id    = $session_data && isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
-
-    $cart_item_data = [
-        'mmb_bundle_item' => true,
-        'mmb_bundle_id'   => $bundle_id,
-    ];
-
-    if ( $variation_id ) {
-        $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, [], $cart_item_data );
-    } else {
-        $cart_item_key = WC()->cart->add_to_cart( $product_id, $quantity, 0, [], $cart_item_data );
-    }
-    
-    if ( $cart_item_key ) {
-        WC()->cart->calculate_fees();
-        WC()->cart->calculate_totals();
-        do_action( 'woocommerce_ajax_added_to_cart', $product_id );
-
-        if ( class_exists( 'WC_AJAX' ) ) {
-            WC_AJAX::get_refreshed_fragments();
-        } else {
-            wp_send_json_success(
-                [
-                    'fragments' => [],
-                    'cart_hash' => WC()->cart->get_cart_hash(),
-                ]
-            );
-        }
-    } else {
-        wp_send_json_error( __( 'Failed to add product to cart', 'mix-match-bundle' ) );
-    }
     } catch ( Exception $e ) {
-        // Log the full error for debugging
+        // Log full error for debugging
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log( 'MMB AJAX Error: ' . $e->getMessage() );
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log( 'MMB AJAX Stack Trace: ' . $e->getTraceAsString() );
         }
         
@@ -992,9 +1076,7 @@ function mmb_wc_ajax_add_to_cart() {
     } catch ( Error $e ) {
         // Catch fatal errors (PHP 7+)
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log( 'MMB AJAX Fatal Error: ' . $e->getMessage() );
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
             error_log( 'MMB AJAX Stack Trace: ' . $e->getTraceAsString() );
         }
         
@@ -1003,6 +1085,23 @@ function mmb_wc_ajax_add_to_cart() {
             'message' => __( 'An error occurred while adding products to cart', 'mix-match-bundle' ),
             'error' => defined( 'WP_DEBUG' ) && WP_DEBUG ? $e->getMessage() : '',
         ] );
+    }
+}
+
+function mmb_debug_coupon_state() {
+    // Verify nonce for security
+    check_ajax_referer( 'mmb_frontend_nonce', 'nonce' );
+    
+    // Call debug function
+    if ( class_exists( 'MMB_Cart' ) ) {
+        $cart_handler = MMB_Cart::get_instance();
+        if ( method_exists( $cart_handler, 'debug_coupon_state' ) ) {
+            wp_send_json_success( $cart_handler->debug_coupon_state() );
+        } else {
+            wp_send_json_error( [ 'error' => 'Debug function not available' ] );
+        }
+    } else {
+        wp_send_json_error( [ 'error' => 'MMB_Cart class not available' ] );
     }
 }
 
@@ -1021,4 +1120,283 @@ function mmb_init_plugin() {
 
 // Hook into plugins_loaded to ensure WooCommerce is loaded first
 add_action( 'plugins_loaded', 'mmb_init_plugin', 20 );
+
+// Schedule daily cleanup of unused bundle coupons
+add_action( 'wp', 'mmb_schedule_coupon_cleanup' );
+
+function mmb_schedule_coupon_cleanup() {
+    if ( ! wp_next_scheduled( 'mmb_daily_coupon_cleanup' ) ) {
+        wp_schedule_event( time(), 'daily', 'mmb_daily_coupon_cleanup' );
+    }
+}
+
+// Hook the cleanup function to the scheduled event
+add_action( 'mmb_daily_coupon_cleanup', 'mmb_cleanup_unused_coupons' );
+
+/**
+ * Clean up unused bundle coupons older than 24 hours
+ * 
+ * This function removes bundle coupons that:
+ * - Were created more than 24 hours ago
+ * - Have not been used (usage_count = 0)
+ * - Were created by this plugin (code starts with 'mmb_bundle_')
+ */
+function mmb_cleanup_unused_coupons() {
+    /** @var wpdb $wpdb WordPress database abstraction object. */
+    global $wpdb;
+    
+    // Get all coupons created by this plugin
+    $coupon_posts = get_posts( [
+        'post_type' => 'shop_coupon',
+        'posts_per_page' => -1,
+        'post_status' => 'publish',
+        'meta_query' => [
+            [
+                'key' => 'coupon_code',
+                'value' => 'mmb_bundle_',
+                'compare' => 'LIKE',
+            ],
+        ],
+    ] );
+    
+    $deleted_count = 0;
+    $kept_count = 0;
+    
+    foreach ( $coupon_posts as $coupon_post ) {
+        $coupon = new WC_Coupon( $coupon_post->ID );
+        
+        // Check if coupon code starts with 'mmb_bundle_'
+        if ( strpos( $coupon->get_code(), 'mmb_bundle_' ) !== 0 ) {
+            continue;
+        }
+        
+        // Get coupon creation date
+        $created_date = get_post_time( 'U', true, $coupon_post->ID );
+        $current_time = current_time( 'timestamp' );
+        $age_in_hours = ( $current_time - $created_date ) / HOUR_IN_SECONDS;
+        
+        // Check if coupon is older than 24 hours
+        if ( $age_in_hours < 24 ) {
+            continue;
+        }
+        
+        // Check if coupon has been used
+        $usage_count = $coupon->get_usage_count();
+        
+        if ( $usage_count > 0 ) {
+            // Coupon has been used, keep it
+            $kept_count++;
+            
+            // Debug logging
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( sprintf(
+                    'MMB Cleanup: Keeping used coupon %s (used %d times)',
+                    $coupon->get_code(),
+                    $usage_count
+                ) );
+            }
+        } else {
+            // Coupon has not been used, delete it
+            wp_delete_post( $coupon_post->ID, true );
+            $deleted_count++;
+            
+            // Debug logging
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( sprintf(
+                    'MMB Cleanup: Deleted unused coupon %s (age: %.1f hours)',
+                    $coupon->get_code(),
+                    $age_in_hours
+                ) );
+            }
+        }
+    }
+    
+    // Log summary
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        error_log( sprintf(
+            'MMB Cleanup: Completed. Deleted: %d, Kept: %d',
+            $deleted_count,
+            $kept_count
+        ) );
+    }
+    
+    return [
+        'deleted' => $deleted_count,
+        'kept' => $kept_count,
+    ];
+}
+
+// Add manual cleanup action for testing/debugging
+add_action( 'admin_init', 'mmb_manual_coupon_cleanup' );
+
+function mmb_manual_coupon_cleanup() {
+    // Check if manual cleanup is requested
+    if ( isset( $_GET['mmb_cleanup_coupons'] ) && current_user_can( 'manage_woocommerce' ) ) {
+        check_admin_referer( 'mmb_cleanup_coupons' );
+        
+        $result = mmb_cleanup_unused_coupons();
+        
+        // Add admin notice
+        add_action( 'admin_notices', function() use ( $result ) {
+            printf(
+                '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+                sprintf(
+                    esc_html__( 'Bundle coupon cleanup completed. Deleted: %d, Kept: %d', 'mix-match-bundle' ),
+                    absint( $result['deleted'] ),
+                    absint( $result['kept'] )
+                )
+            );
+        } );
+    }
+}
+
+// Clear scheduled event on plugin deactivation
+register_deactivation_hook( __FILE__, 'mmb_deactivate_cleanup_schedule' );
+
+function mmb_deactivate_cleanup_schedule() {
+    $timestamp = wp_next_scheduled( 'mmb_daily_coupon_cleanup' );
+    if ( $timestamp ) {
+        wp_unschedule_event( $timestamp, 'mmb_daily_coupon_cleanup' );
+    }
+}
+
+// Hook into checkout page to ensure coupon is applied
+add_action( 'woocommerce_before_checkout_process', 'mmb_ensure_coupon_applied', 10 );
+
+function mmb_ensure_coupon_applied() {
+    if ( ! WC()->cart || ! WC()->session ) {
+        return;
+    }
+    
+    // Get bundle data from session
+    $session_data = WC()->session->get( 'mmb_bundle_discount' );
+    if ( ! $session_data ) {
+        return;
+    }
+    
+    $bundle_id = isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+    $discount_amount = isset( $session_data['discount_amount'] ) ? $session_data['discount_amount'] : 0;
+    $coupon_code = isset( $session_data['coupon_code'] ) ? $session_data['coupon_code'] : null;
+    
+    // Check if we have bundle data and coupon code but coupon is not applied
+    if ( $bundle_id > 0 && $discount_amount > 0 && ! empty( $coupon_code ) && ! WC()->cart->has_discount( $coupon_code ) ) {
+        // Apply coupon if not already applied
+        WC()->cart->apply_coupon( $coupon_code );
+        
+        // Debug logging
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'MMB: Coupon Applied on Checkout - Code: ' . $coupon_code );
+            error_log( 'MMB: Coupon Amount: ' . $discount_amount );
+            error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+        }
+        
+        // Recalculate totals immediately after coupon application
+        WC()->cart->calculate_totals();
+    }
+}
+
+// Hook into cart page to ensure coupon is applied
+add_action( 'woocommerce_before_cart', 'mmb_ensure_coupon_applied_on_cart', 10 );
+
+function mmb_ensure_coupon_applied_on_cart() {
+    if ( ! WC()->cart || ! WC()->session ) {
+        return;
+    }
+    
+    // Get bundle data from session
+    $session_data = WC()->session->get( 'mmb_bundle_discount' );
+    if ( ! $session_data ) {
+        return;
+    }
+    
+    $bundle_id = isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+    $discount_amount = isset( $session_data['discount_amount'] ) ? $session_data['discount_amount'] : 0;
+    $coupon_code = isset( $session_data['coupon_code'] ) ? $session_data['coupon_code'] : null;
+    
+    // Check if we have bundle data and coupon code but coupon is not applied
+    if ( $bundle_id > 0 && $discount_amount > 0 && ! empty( $coupon_code ) && ! WC()->cart->has_discount( $coupon_code ) ) {
+        // Apply coupon if not already applied
+        WC()->cart->apply_coupon( $coupon_code );
+        
+        // Debug logging
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'MMB: Coupon Applied on Cart - Code: ' . $coupon_code );
+            error_log( 'MMB: Coupon Amount: ' . $discount_amount );
+            error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+        }
+        
+        // Recalculate totals immediately after coupon application
+        WC()->cart->calculate_totals();
+    }
+}
+
+// Hook into mini-cart to ensure coupon is applied
+add_action( 'woocommerce_before_mini_cart_contents', 'mmb_ensure_coupon_applied_on_mini_cart', 10 );
+
+function mmb_ensure_coupon_applied_on_mini_cart() {
+    if ( ! WC()->cart || ! WC()->session ) {
+        return;
+    }
+    
+    // Get bundle data from session
+    $session_data = WC()->session->get( 'mmb_bundle_discount' );
+    if ( ! $session_data ) {
+        return;
+    }
+    
+    $bundle_id = isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+    $discount_amount = isset( $session_data['discount_amount'] ) ? $session_data['discount_amount'] : 0;
+    $coupon_code = isset( $session_data['coupon_code'] ) ? $session_data['coupon_code'] : null;
+    
+    // Check if we have bundle data and coupon code but coupon is not applied
+    if ( $bundle_id > 0 && $discount_amount > 0 && ! empty( $coupon_code ) && ! WC()->cart->has_discount( $coupon_code ) ) {
+        // Apply coupon if not already applied
+        WC()->cart->apply_coupon( $coupon_code );
+        
+        // Debug logging
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'MMB: Coupon Applied on Mini-Cart - Code: ' . $coupon_code );
+            error_log( 'MMB: Coupon Amount: ' . $discount_amount );
+            error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+        }
+        
+        // Recalculate totals immediately after coupon application
+        WC()->cart->calculate_totals();
+    }
+}
+
+// Hook into cart refresh to ensure coupon is applied
+add_action( 'woocommerce_cart_loaded_from_session', 'mmb_ensure_coupon_applied_on_cart_refresh', 10 );
+
+function mmb_ensure_coupon_applied_on_cart_refresh() {
+    if ( ! WC()->cart || ! WC()->session ) {
+        return;
+    }
+    
+    // Get bundle data from session
+    $session_data = WC()->session->get( 'mmb_bundle_discount' );
+    if ( ! $session_data ) {
+        return;
+    }
+    
+    $bundle_id = isset( $session_data['bundle_id'] ) ? $session_data['bundle_id'] : 0;
+    $discount_amount = isset( $session_data['discount_amount'] ) ? $session_data['discount_amount'] : 0;
+    $coupon_code = isset( $session_data['coupon_code'] ) ? $session_data['coupon_code'] : null;
+    
+    // Check if we have bundle data and coupon code but coupon is not applied
+    if ( $bundle_id > 0 && $discount_amount > 0 && ! empty( $coupon_code ) && ! WC()->cart->has_discount( $coupon_code ) ) {
+        // Apply coupon if not already applied
+        WC()->cart->apply_coupon( $coupon_code );
+        
+        // Debug logging
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            error_log( 'MMB: Coupon Applied on Cart Refresh - Code: ' . $coupon_code );
+            error_log( 'MMB: Coupon Amount: ' . $discount_amount );
+            error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+        }
+        
+        // Recalculate totals immediately after coupon application
+        WC()->cart->calculate_totals();
+    }
+}
 

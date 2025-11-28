@@ -132,14 +132,14 @@ class MMB_Cart {
                 $coupon->set_code( $coupon_code );
             }
             
-            // Use fixed cart discount - applies the exact discount amount
-            // Note: This applies to the entire cart, but since we only apply it when bundle items are added
+            // Use fixed cart discount - applies to entire cart
+            // Note: This applies to entire cart, but since we only apply it when bundle items are added
             // and remove it when bundle items are removed, it should work correctly
             $coupon->set_discount_type( 'fixed_cart' );
             $coupon->set_amount( $discount_amount );
             $coupon->set_individual_use( false );
-            $coupon->set_usage_limit( 999 ); // High limit to allow multiple uses
-            $coupon->set_usage_limit_per_user( 999 );
+            $coupon->set_usage_limit( 1 ); // Limit to 1 use per customer
+            $coupon->set_usage_limit_per_user( 1 );
             $coupon->set_limit_usage_to_x_items( null );
             $coupon->set_free_shipping( false );
             $coupon->set_exclude_sale_items( false );
@@ -148,13 +148,13 @@ class MMB_Cart {
             $coupon->set_minimum_amount( 0 );
             $coupon->set_maximum_amount( '' );
             
+            // Set expiration (24 hours from now)
+            $coupon->set_date_expires( time() + DAY_IN_SECONDS );
+            
             // Restrict coupon to bundle products only
             if ( ! empty( $product_ids ) && is_array( $product_ids ) ) {
                 $coupon->set_product_ids( $product_ids );
             }
-            
-            // Set expiration (24 hours from now)
-            $coupon->set_date_expires( time() + DAY_IN_SECONDS );
             
             // Ensure coupon is published/active
             $coupon->set_status( 'publish' );
@@ -166,21 +166,30 @@ class MMB_Cart {
                 throw new Exception( 'Failed to save coupon' );
             }
             
+            // Debug logging
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'MMB: Coupon created successfully - Code: ' . $coupon_code );
+                error_log( 'MMB: Coupon details - Type: ' . $coupon->get_discount_type() );
+                error_log( 'MMB: Coupon amount: ' . $coupon->get_amount() );
+                error_log( 'MMB: Coupon usage limit: ' . $coupon->get_usage_limit() );
+                error_log( 'MMB: Coupon product restriction: ' . print_r( $coupon->get_product_ids(), true ) );
+            }
+            
             // Clear coupon cache to ensure it's immediately available
             if ( function_exists( 'wc_delete_shop_order_transients' ) ) {
                 wc_delete_shop_order_transients();
             }
             if ( function_exists( 'wp_cache_delete' ) ) {
-                wp_cache_delete( 'wc_coupon_' . $coupon_code, 'coupons' );
+                wp_cache_delete( 'wc_coupon_' . $coupon_code );
             }
             
             return $coupon_code;
         } catch ( Exception $e ) {
-            // Log error
+            // Log error for debugging
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
                 error_log( 'MMB Coupon Creation Error: ' . $e->getMessage() );
             }
+            
             // Return empty string to indicate failure
             return '';
         }
@@ -228,29 +237,26 @@ class MMB_Cart {
         
         $coupon_code = $this->get_bundle_coupon_code( $bundle_id );
         
-        // If coupon already applied, update it
-        if ( WC()->cart->has_discount( $coupon_code ) ) {
-            return;
-        }
-        
-        // Calculate current subtotal of bundle items
-        $bundle_subtotal = 0;
-        foreach ( WC()->cart->get_cart() as $item ) {
-            if ( ! empty( $item['mmb_bundle_item'] ) ) {
-                $bundle_subtotal += $item['data']->get_price() * $item['quantity'];
+        // Only proceed if coupon was created successfully
+        if ( ! empty( $coupon_code ) ) {
+            // Verify coupon exists before applying
+            $coupon_id = wc_get_coupon_id_by_code( $coupon_code );
+            
+            if ( $coupon_id ) {
+                // Apply coupon to cart
+                $coupon_applied = WC()->cart->apply_coupon( $coupon_code );
+                
+                // Verify coupon was applied
+                if ( $coupon_applied ) {
+                    // Remove any error notices about our bundle coupon
+                    if ( method_exists( $cart_handler, 'remove_bundle_coupon_notices' ) ) {
+                        $cart_handler->remove_bundle_coupon_notices();
+                    }
+                    
+                    // Recalculate totals immediately after coupon application
+                    WC()->cart->calculate_totals();
+                }
             }
-        }
-        
-        if ( $bundle_subtotal <= 0 ) {
-            return;
-        }
-        
-        // Create and apply coupon
-        $coupon_code = $this->create_bundle_coupon( $bundle_id, $discount_amount, $bundle_subtotal );
-        
-        // Apply coupon
-        if ( ! WC()->cart->has_discount( $coupon_code ) ) {
-            WC()->cart->apply_coupon( $coupon_code );
         }
     }
     
@@ -284,7 +290,7 @@ class MMB_Cart {
         // Remove coupon if no bundle items remain
         if ( ! $has_bundle_items ) {
             // Get coupon code from session
-            $coupon_code = isset( $session_data['coupon_code'] ) ? $session_data['coupon_code'] : $this->get_bundle_coupon_code( $bundle_id );
+            $coupon_code = isset( $session_data['coupon_code'] ) ? $session_data['coupon_code'] : null;
             if ( ! empty( $coupon_code ) && WC()->cart->has_discount( $coupon_code ) ) {
                 WC()->cart->remove_coupon( $coupon_code );
             }
@@ -498,5 +504,61 @@ class MMB_Cart {
                 error_log( 'MMB Notice Removal Error: ' . $e->getMessage() );
             }
         }
+    }
+
+    /**
+     * Debug function to log current coupon state
+     * Call this via AJAX to see what's happening with coupons
+     */
+    public function debug_coupon_state() {
+        if ( ! WC()->cart ) {
+            return [ 'error' => 'Cart not available' ];
+        }
+        
+        $debug_info = [
+            'cart_contents' => [],
+            'applied_coupons' => [],
+            'coupon_data' => [],
+        ];
+        
+        // Get cart contents
+        foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
+            $debug_info['cart_contents'][] = [
+                'key' => $cart_item_key,
+                'product_id' => $cart_item['product_id'],
+                'name' => $cart_item['data']->get_name(),
+                'quantity' => $cart_item['quantity'],
+                'price' => $cart_item['data']->get_price(),
+                'subtotal' => $cart_item['data']->get_price() * $cart_item['quantity'],
+                'bundle_item' => ! empty( $cart_item['mmb_bundle_item'] ),
+                'bundle_id' => ! empty( $cart_item['mmb_bundle_id'] ) ? $cart_item['mmb_bundle_id'] : null,
+            ];
+        }
+        
+        // Get applied coupons
+        $applied_coupons = WC()->cart->get_applied_coupons();
+        foreach ( $applied_coupons as $coupon ) {
+            $debug_info['applied_coupons'][] = [
+                'code' => $coupon->get_code(),
+                'type' => $coupon->get_discount_type(),
+                'amount' => $coupon->get_amount(),
+                'product_ids' => $coupon->get_product_ids(),
+                'usage_limit' => $coupon->get_usage_limit(),
+                'usage_count' => $coupon->get_usage_count(),
+                'date_expires' => $coupon->get_date_expires(),
+            ];
+        }
+        
+        // Get session data
+        $session_data = WC()->session ? WC()->session->get( 'mmb_bundle_discount' ) : null;
+        if ( $session_data ) {
+            $debug_info['coupon_data'] = [
+                'bundle_id' => $session_data['bundle_id'],
+                'discount_amount' => $session_data['discount_amount'],
+                'coupon_code' => isset( $session_data['coupon_code'] ) ? $session_data['coupon_code'] : null,
+            ];
+        }
+        
+        return $debug_info;
     }
 }

@@ -94,7 +94,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                             
                             <?php if ( $is_variable ) : ?>
                                 <div class="mmb-variation-select">
-                                    <select class="mmb-variation-dropdown" data-product-id="<?php echo intval( $product->get_id() ); ?>">
+                                    <label for="mmb-variation-<?php echo intval( $product->get_id() ); ?>" class="mmb-variation-label"><?php echo esc_html__( 'Select an option', 'mix-match-bundle' ); ?></label>
+                                    <select class="mmb-variation-dropdown" id="mmb-variation-<?php echo intval( $product->get_id() ); ?>" data-product-id="<?php echo intval( $product->get_id() ); ?>">
                                         <option value=""><?php echo esc_html__( 'Select an option', 'mix-match-bundle' ); ?></option>
                                         <?php foreach ( $variations as $variation ) : 
                                             $variation_obj = wc_get_product( $variation['variation_id'] );
@@ -110,7 +111,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                             <option 
                                                 value="<?php echo esc_attr( $variation['variation_id'] ); ?>" 
                                                 data-price="<?php echo esc_attr( $variation_obj->get_price() ); ?>"
-                                                data-image="<?php echo esc_url( $variation['image']['url'] ?? '' ); ?>">
+                                                data-image="<?php echo esc_url( isset( $variation['image']['url'] ) ? $variation['image']['url'] : '' ); ?>">
                                                 <?php echo esc_html( $variation_name ); ?> - <?php echo wp_kses_post( wc_price( $variation_obj->get_price() ) ); ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -122,14 +123,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 $max_quantity = isset( $bundle['max_quantity'] ) ? intval( $bundle['max_quantity'] ) : 10;
                             ?>
                                 <div class="mmb-product-quantity">
-                                    <div class="mmb-quantity-controls">
-                                        <button type="button" class="mmb-qty-btn mmb-qty-minus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Decrease quantity', 'mix-match-bundle' ); ?>">
+                                    <div class="mmb-quantity-controls" role="group" aria-label="<?php echo esc_attr__( 'Product quantity controls', 'mix-match-bundle' ); ?>">
+                                        <button type="button" class="mmb-qty-btn mmb-qty-minus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Decrease quantity', 'mix-match-bundle' ); ?>" tabindex="0">
                                             <span>−</span>
                                         </button>
                                         <input type="number" min="0" max="<?php echo esc_attr( $max_quantity ); ?>" value="0" class="mmb-product-qty-input" 
                                                data-product-id="<?php echo intval( $product->get_id() ); ?>"
-                                               <?php echo $is_variable ? 'disabled' : ''; ?> readonly aria-label="<?php echo esc_attr__( 'Quantity', 'mix-match-bundle' ); ?>">
-                                        <button type="button" class="mmb-qty-btn mmb-qty-plus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Increase quantity', 'mix-match-bundle' ); ?>">
+                                               <?php echo $is_variable ? 'disabled' : ''; ?> readonly aria-label="<?php echo esc_attr__( 'Quantity', 'mix-match-bundle' ); ?>" tabindex="0">
+                                        <button type="button" class="mmb-qty-btn mmb-qty-plus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Increase quantity', 'mix-match-bundle' ); ?>" tabindex="0">
                                             <span>+</span>
                                         </button>
                                     </div>
@@ -174,8 +175,8 @@ if ( ! defined( 'ABSPATH' ) ) {
                 </div>
             </div>
             
-            <div class="mmb-bundle-summary">
-                <h3><?php echo esc_html__( 'My Bundle', 'mix-match-bundle' ); ?> <span class="mmb-item-count">0 / 10</span></h3>
+            <div class="mmb-bundle-summary" role="region" aria-labelledby="bundle-summary-title">
+                <h3 id="bundle-summary-title"><?php echo esc_html__( 'My Bundle', 'mix-match-bundle' ); ?> <span class="mmb-item-count">0 / 10</span></h3>
                 
                 <div id="mmb-bundle-items" class="mmb-selected-items">
                     <p class="mmb-empty-state"><?php echo esc_html__( 'Select products to get started', 'mix-match-bundle' ); ?></p>
@@ -192,11 +193,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </div>
                     <div class="mmb-price-row mmb-total">
                         <span><?php echo esc_html__( 'Total', 'mix-match-bundle' ); ?></span>
-                        <span class="mmb-price" id="mmb-total">$0.00</span>
+                        <span class="mmb-price" id="bundle-summary-total"><?php echo wp_kses_post( wc_price( 0 ) ); ?></span>
                     </div>
                 </div>
                 
-                <button id="mmb-add-to-cart" class="button button-primary mmb-add-to-cart" disabled data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>">
+                <button id="mmb-add-to-cart" class="button button-primary mmb-add-to-cart" disabled data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>" aria-describedby="bundle-summary-total">
                     <?php echo esc_html( $bundle['button_text'] ?: __( 'Add Bundle to Cart', 'mix-match-bundle' ) ); ?>
                 </button>
             </div>

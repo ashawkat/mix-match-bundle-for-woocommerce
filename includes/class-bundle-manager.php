@@ -13,6 +13,7 @@ class MMB_Bundle_Manager {
             $this->table = mmb_get_table_name();
         } else {
             global $wpdb;
+            /** @var wpdb $wpdb WordPress database abstraction object. */
             $this->table = $wpdb->prefix . 'mmb_bundles';
         }
     }
@@ -24,6 +25,7 @@ class MMB_Bundle_Manager {
      */
     private function ensure_table_exists() {
         global $wpdb;
+        /** @var wpdb $wpdb WordPress database abstraction object. */
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -38,6 +40,7 @@ class MMB_Bundle_Manager {
      */
     public function save_bundle( $data ) {
         global $wpdb;
+        /** @var wpdb $wpdb WordPress database abstraction object. */
         
         
         $bundle_id = isset( $data['bundle_id'] ) ? intval( $data['bundle_id'] ) : 0;
@@ -198,6 +201,7 @@ class MMB_Bundle_Manager {
      */
     public function get_all_bundles() {
         global $wpdb;
+        /** @var wpdb $wpdb WordPress database abstraction object. */
         
         $cache_key = 'mmb_all_bundles';
         $cache_group = 'mix_match_bundle';
@@ -207,14 +211,12 @@ class MMB_Bundle_Manager {
             return $cached;
         }
         
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+        // Use proper table name with prepare
+        $table_name = $this->table;
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $bundles = $wpdb->get_results(
-            /* phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber */
             $wpdb->prepare(
-                sprintf(
-                    'SELECT * FROM %s WHERE 1 = %%d ORDER BY id DESC',
-                    esc_sql( mmb_get_table_name() )
-                ),
+                "SELECT * FROM {$table_name} WHERE 1 = %d ORDER BY id DESC",
                 1
             )
         );
@@ -233,6 +235,7 @@ class MMB_Bundle_Manager {
      */
     public function get_bundle( $bundle_id ) {
         global $wpdb;
+        /** @var wpdb $wpdb WordPress database abstraction object. */
         
         $cache_key = 'mmb_bundle_' . $bundle_id;
         $cache_group = 'mix_match_bundle';
@@ -242,14 +245,12 @@ class MMB_Bundle_Manager {
             return $cached;
         }
         
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+        // Use proper table name with prepare
+        $table_name = $this->table;
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $bundle = $wpdb->get_row(
-            /* phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber */
             $wpdb->prepare(
-                sprintf(
-                    'SELECT * FROM %s WHERE id = %%d',
-                    esc_sql( mmb_get_table_name() )
-                ),
+                "SELECT * FROM {$table_name} WHERE id = %d",
                 $bundle_id
             )
         );
@@ -302,10 +303,11 @@ class MMB_Bundle_Manager {
      */
     public function delete_bundle( $bundle_id ) {
         global $wpdb;
+        /** @var wpdb $wpdb WordPress database abstraction object. */
         
-        $table = esc_sql( $this->table );
+        // Use table name directly - WordPress will handle escaping
         $result = $wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-            $table,
+            $this->table,
             [ 'id' => intval( $bundle_id ) ],
             [ '%d' ]
         );
@@ -348,6 +350,7 @@ class MMB_Bundle_Manager {
      */
     public function get_enabled_bundles() {
         global $wpdb;
+        /** @var wpdb $wpdb WordPress database abstraction object. */
         
         $cache_key = 'mmb_enabled_bundles';
         $cache_group = 'mix_match_bundle';
@@ -357,14 +360,12 @@ class MMB_Bundle_Manager {
             return $cached;
         }
         
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+        // Use proper table name with prepare
+        $table_name = $this->table;
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
         $bundles = $wpdb->get_results(
-            /* phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber */
             $wpdb->prepare(
-                sprintf(
-                    'SELECT * FROM %s WHERE enabled = %%d ORDER BY id DESC',
-                    esc_sql( mmb_get_table_name() )
-                ),
+                "SELECT * FROM {$table_name} WHERE enabled = %d ORDER BY id DESC",
                 1
             )
         );

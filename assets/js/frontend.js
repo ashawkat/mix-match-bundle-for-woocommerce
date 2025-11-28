@@ -475,7 +475,8 @@
             
             // Populate product list in sidebar
             if (this.bundleItemsContainer && data.products && data.products.length > 0) {
-                this.bundleItemsContainer.innerHTML = '';
+                // Use document fragment for better performance
+                const fragment = document.createDocumentFragment();
                 
                 data.products.forEach((product, index) => {
                     
@@ -499,8 +500,12 @@
                         <span class="mmb-item-price">${this.formatPrice(productPrice)}</span>
                     `;
                     
-                    this.bundleItemsContainer.appendChild(itemDiv);
+                    fragment.appendChild(itemDiv);
                 });
+                
+                // Clear and append all at once
+                this.bundleItemsContainer.innerHTML = '';
+                this.bundleItemsContainer.appendChild(fragment);
             }
             
             // Format and update prices
@@ -534,21 +539,30 @@
                 element: item
             })).sort((a, b) => a.quantity - b.quantity);
             
-            // Update desktop tiers
+            // Update desktop tiers - batch DOM updates
+            const tierUpdates = [];
             this.tierItems.forEach(tierItem => {
                 const tierQty = parseInt(tierItem.dataset.quantity);
                 const tierDiscount = parseFloat(tierItem.dataset.discount);
                 
+                let classes = ['mmb-tier-item'];
                 if (itemCount >= tierQty) {
-                    tierItem.classList.add('unlocked');
+                    classes.push('unlocked');
                     if (discountPercentage === tierDiscount) {
-                        tierItem.classList.add('active');
-                    } else {
-                        tierItem.classList.remove('active');
+                        classes.push('active');
                     }
-                } else {
-                    tierItem.classList.remove('unlocked', 'active');
                 }
+                
+                // Only update if classes changed
+                const currentClasses = Array.from(tierItem.classList);
+                if (currentClasses.sort().join('') !== classes.sort().join('')) {
+                    tierUpdates.push({ element: tierItem, classes });
+                }
+            });
+            
+            // Apply all class updates at once
+            tierUpdates.forEach(update => {
+                update.element.className = update.classes.join(' ');
             });
             
             // Find next tier to unlock
@@ -878,6 +892,7 @@
                 
                 const params = new URLSearchParams({
                     action: 'mmb_wc_ajax_add_to_cart',
+                    nonce: mmb_frontend.nonce,
                     products: JSON.stringify(groupedProducts),
                     discount_amount: discountAmount
                 });
@@ -885,24 +900,41 @@
                 const response = await fetch(mmb_frontend.ajaxurl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                     },
-                    body: params
+                    body: params.toString()
                 });
                 
-                // Check if response is OK
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
+                const responseText = await response.text();
+                
+                // Check if response is empty or contains HTML (error page)
+                if (!responseText || responseText.trim().startsWith('<')) {
+                    throw new Error('Invalid response from server');
+                }
+                
+                // Try to parse JSON with better error handling
                 let data;
                 try {
-                    data = await response.json();
-                } catch (jsonError) {
-                    console.error('MMB: Failed to parse JSON response:', jsonError);
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('MMB: Failed to parse JSON response:', parseError);
+                    console.error('MMB: Raw response:', responseText);
                     throw new Error('Invalid JSON response from server');
                 }
-
+                
+                // Handle bundle session storage response
+                if (data.success && data.data && data.data.bundle_id) {
+                    // Bundle items stored in session, now add to cart
+                    console.log('MMB: Bundle items stored, adding to cart...');
+                    
+                    // Call addBundleToCart again with stored bundle data
+                    return this.addBundleToCart();
+                }
+                
                 // Validate data exists
                 if (!data) {
                     throw new Error('No data received from server');
@@ -986,7 +1018,7 @@
                 const dispatch = window.wp.data.dispatch('wc/store/cart');
                 
                 if (dispatch) {
-                    // Invalidate all cart-related selectors to force complete refresh
+                    // Force cart data refresh
                     if (typeof dispatch.invalidateResolutionForStoreSelector === 'function') {
                         dispatch.invalidateResolutionForStoreSelector('getCartData');
                         dispatch.invalidateResolutionForStoreSelector('getCartTotals');
@@ -994,44 +1026,30 @@
                         dispatch.invalidateResolutionForStoreSelector('getCartCoupons');
                     }
                     
-                    // If there's a refreshCart method, use it
+                    // Trigger cart refresh
                     if (typeof dispatch.refreshCart === 'function') {
                         dispatch.refreshCart();
                     }
                     
-                    // Trigger WooCommerce Blocks events immediately
-                    this.triggerCustomEvent('wc-blocks_update_cart');
-                    this.triggerCustomEvent('wc-blocks_cart_update');
-                    
-                    // Force refresh after delays to ensure coupon is included
-                    // First refresh after short delay
+                    // Additional refresh after delay to ensure coupon is processed
                     setTimeout(() => {
-                        if (dispatch && typeof dispatch.invalidateResolutionForStoreSelector === 'function') {
-                            dispatch.invalidateResolutionForStoreSelector('getCartData');
-                            dispatch.invalidateResolutionForStoreSelector('getCartTotals');
-                            dispatch.invalidateResolutionForStoreSelector('getCartCoupons');
+                        if (typeof dispatch.refreshCart === 'function') {
+                            dispatch.refreshCart();
                         }
-                        this.triggerCustomEvent('wc_fragment_refresh');
-                    }, 150);
+                    }, 300);
                     
-                    // Second refresh after medium delay to ensure server has processed coupon
+                    // Final refresh after longer delay
                     setTimeout(() => {
-                        if (dispatch && typeof dispatch.invalidateResolutionForStoreSelector === 'function') {
-                            dispatch.invalidateResolutionForStoreSelector('getCartData');
-                            dispatch.invalidateResolutionForStoreSelector('getCartTotals');
+                        if (typeof dispatch.refreshCart === 'function') {
+                            dispatch.refreshCart();
                         }
-                        this.triggerCustomEvent('wc-blocks_update_cart');
-                    }, 400);
-                    
-                    // Final refresh after longer delay to catch any late updates
-                    setTimeout(() => {
-                        if (dispatch && typeof dispatch.invalidateResolutionForStoreSelector === 'function') {
-                            dispatch.invalidateResolutionForStoreSelector('getCartData');
-                        }
-                    }, 800);
+                    }, 1000);
                 }
-            } catch(e) {
-                // Silently fail - block cart will update via fragments
+            } catch (e) {
+                // Silently fail - don't break cart functionality
+                if (window.console && console.error) {
+                    console.error('MMB: Failed to update Blocks cart store:', e);
+                }
             }
         },
         
