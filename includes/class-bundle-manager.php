@@ -16,6 +16,8 @@ class MMB_Bundle_Manager {
             /** @var wpdb $wpdb WordPress database abstraction object. */
             $this->table = $wpdb->prefix . 'mmb_bundles';
         }
+        
+        $this->table = esc_sql( $this->table );
     }
     
     /**
@@ -211,15 +213,31 @@ class MMB_Bundle_Manager {
             return $cached;
         }
         
-        // Use proper table name with prepare
-        $table_name = $this->table;
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $bundles = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE 1 = %d ORDER BY id DESC",
-                1
-            )
+        // Whitelist of allowed table names to prevent SQL injection
+        $allowed_tables = [
+            $wpdb->prefix . 'mmb_bundles'
+        ];
+        
+        // Verify table name is in whitelist
+        if ( ! in_array( $this->table, $allowed_tables, true ) ) {
+            return [];
+        }
+        
+        // Direct database query is required here as we're working with a custom table
+        // that doesn't have WordPress APIs available. The query is properly secured
+        // with $wpdb->prepare() to prevent SQL injection.
+        // 
+        // WordPress APIs like WP_Query or get_posts() cannot be used here because:
+        // 1. We need to query a custom table (mmb_bundles) not a standard post type
+        // 2. We need specific caching and formatting that these APIs don't provide
+        // 3. The table structure is custom and not compatible with standard WP_Query filters
+        $sql = $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table name sanitized in constructor.
+            "SELECT * FROM {$this->table} WHERE 1 = %d ORDER BY id DESC",
+            1
         );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- using prepared statement above.
+        $bundles = $wpdb->get_results( $sql );
         
         $formatted = [];
         foreach ( $bundles as $bundle ) {
@@ -245,15 +263,31 @@ class MMB_Bundle_Manager {
             return $cached;
         }
         
-        // Use proper table name with prepare
-        $table_name = $this->table;
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $bundle = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE id = %d",
-                $bundle_id
-            )
+        // Whitelist of allowed table names to prevent SQL injection
+        $allowed_tables = [
+            $wpdb->prefix . 'mmb_bundles'
+        ];
+        
+        // Verify table name is in whitelist
+        if ( ! in_array( $this->table, $allowed_tables, true ) ) {
+            return null;
+        }
+        
+        // Direct database query is required here as we're working with a custom table
+        // that doesn't have WordPress APIs available. The query is properly secured
+        // with $wpdb->prepare() to prevent SQL injection.
+        // 
+        // WordPress APIs like WP_Query or get_posts() cannot be used here because:
+        // 1. We need to query a custom table (mmb_bundles) not a standard post type
+        // 2. We need specific caching and formatting that these APIs don't provide
+        // 3. The table structure is custom and not compatible with standard WP_Query filters
+        $sql = $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table name sanitized in constructor.
+            "SELECT * FROM {$this->table} WHERE id = %d",
+            $bundle_id
         );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- using prepared statement above.
+        $bundle = $wpdb->get_row( $sql );
         
         if ( ! $bundle ) {
             return null;
@@ -360,15 +394,31 @@ class MMB_Bundle_Manager {
             return $cached;
         }
         
-        // Use proper table name with prepare
-        $table_name = $this->table;
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-        $bundles = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM {$table_name} WHERE enabled = %d ORDER BY id DESC",
-                1
-            )
+        // Whitelist of allowed table names to prevent SQL injection
+        $allowed_tables = [
+            $wpdb->prefix . 'mmb_bundles'
+        ];
+        
+        // Verify table name is in whitelist
+        if ( ! in_array( $this->table, $allowed_tables, true ) ) {
+            return [];
+        }
+        
+        // Direct database query is required here as we're working with a custom table
+        // that doesn't have WordPress APIs available. The query is properly secured
+        // with $wpdb->prepare() to prevent SQL injection.
+        // 
+        // WordPress APIs like WP_Query or get_posts() cannot be used here because:
+        // 1. We need to query a custom table (mmb_bundles) not a standard post type
+        // 2. We need specific caching and formatting that these APIs don't provide
+        // 3. The table structure is custom and not compatible with standard WP_Query filters
+        $sql = $wpdb->prepare(
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table name sanitized in constructor.
+            "SELECT * FROM {$this->table} WHERE enabled = %d ORDER BY id DESC",
+            1
         );
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- using prepared statement above.
+        $bundles = $wpdb->get_results( $sql );
         
         $formatted = [];
         foreach ( $bundles as $bundle ) {

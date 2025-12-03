@@ -58,10 +58,54 @@ class MMB_Cart {
      * Ensure WooCommerce session is available for AJAX requests
      */
     public function ensure_session() {
-        if ( ! WC()->session && ! headers_sent() ) {
-            WC()->session = new WC_Session_Handler();
-            WC()->session->init();
+        // Don't initialize if session already exists
+        if ( WC()->session ) {
+            return;
         }
+        
+        // Initialize session for all users (including logged-out)
+        if ( ! class_exists( 'WC_Session_Handler' ) ) {
+            include_once WC_ABSPATH . 'includes/class-wc-session-handler.php';
+        }
+        
+        // Create new session handler
+        WC()->session = new WC_Session_Handler();
+        
+        // Initialize session with customer ID
+        $customer_id = WC()->session->get_customer_id();
+        if ( ! $customer_id ) {
+            // Generate a unique ID for guest customers
+            $customer_id = $this->generate_guest_id();
+            WC()->session->set_customer_id( $customer_id );
+        }
+        
+        // Initialize session data
+        WC()->session->init();
+        
+        // Ensure session cookie is set
+        if ( ! headers_sent() ) {
+            WC()->session->set_customer_session_cookie( true );
+        }
+    }
+    
+    /**
+     * Generate a unique guest ID for session tracking
+     */
+    private function generate_guest_id() {
+        // Try to get existing guest ID from cookie
+        if ( isset( $_COOKIE['woocommerce_mmb_guest_id'] ) ) {
+            return sanitize_text_field( wp_unslash( $_COOKIE['woocommerce_mmb_guest_id'] ) );
+        }
+        
+        // Generate new unique ID
+        $guest_id = 'mmb_guest_' . wp_generate_uuid4();
+        
+        // Set cookie for 30 days
+        if ( ! headers_sent() ) {
+            setcookie( 'woocommerce_mmb_guest_id', $guest_id, time() + (30 * DAY_IN_SECONDS), COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+        }
+        
+        return $guest_id;
     }
     
     /**
@@ -118,6 +162,20 @@ class MMB_Cart {
      */
     public function create_bundle_coupon( $bundle_id, $discount_amount, $subtotal, $product_ids = [] ) {
         try {
+            // Ensure session is available for all users (including logged-out)
+            if ( ! WC()->session ) {
+                if ( ! class_exists( 'WC_Session_Handler' ) ) {
+                    include_once WC_ABSPATH . 'includes/class-wc-session-handler.php';
+                }
+                WC()->session = new WC_Session_Handler();
+                WC()->session->init();
+                
+                // Set session cookie for guest users
+                if ( ! headers_sent() && ! is_user_logged_in() ) {
+                    WC()->session->set_customer_session_cookie( true );
+                }
+            }
+            
             $coupon_code = $this->get_bundle_coupon_code( $bundle_id );
             
             // Check if coupon already exists
@@ -168,11 +226,12 @@ class MMB_Cart {
             
             // Debug logging
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'MMB: Coupon created successfully - Code: ' . $coupon_code );
-                error_log( 'MMB: Coupon details - Type: ' . $coupon->get_discount_type() );
-                error_log( 'MMB: Coupon amount: ' . $coupon->get_amount() );
-                error_log( 'MMB: Coupon usage limit: ' . $coupon->get_usage_limit() );
-                error_log( 'MMB: Coupon product restriction: ' . print_r( $coupon->get_product_ids(), true ) );
+                $logger = wc_get_logger();
+                $logger->debug( 'MMB: Coupon created successfully - Code: ' . $coupon_code, array( 'source' => 'mix-match-bundle' ) );
+                $logger->debug( 'MMB: Coupon details - Type: ' . $coupon->get_discount_type(), array( 'source' => 'mix-match-bundle' ) );
+                $logger->debug( 'MMB: Coupon amount: ' . $coupon->get_amount(), array( 'source' => 'mix-match-bundle' ) );
+                $logger->debug( 'MMB: Coupon usage limit: ' . $coupon->get_usage_limit(), array( 'source' => 'mix-match-bundle' ) );
+                $logger->debug( 'MMB: Coupon product restriction: ' . json_encode( $coupon->get_product_ids() ), array( 'source' => 'mix-match-bundle' ) );
             }
             
             // Clear coupon cache to ensure it's immediately available
@@ -187,7 +246,8 @@ class MMB_Cart {
         } catch ( Exception $e ) {
             // Log error for debugging
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'MMB Coupon Creation Error: ' . $e->getMessage() );
+                $logger = wc_get_logger();
+                $logger->error( 'MMB Coupon Creation Error: ' . $e->getMessage(), array( 'source' => 'mix-match-bundle' ) );
             }
             
             // Return empty string to indicate failure
@@ -499,10 +559,7 @@ class MMB_Cart {
             WC()->session->set( 'wc_notices', $notices );
         } catch ( Exception $e ) {
             // Silently fail - don't break cart functionality
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-                error_log( 'MMB Notice Removal Error: ' . $e->getMessage() );
-            }
+            mmb_debug_log( 'MMB Notice Removal Error: ' . $e->getMessage(), 'error' );
         }
     }
 

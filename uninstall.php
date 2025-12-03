@@ -39,6 +39,8 @@ $wpdb->query( 'DROP TABLE IF EXISTS `' . $table . '`' );
 // Delete plugin options.
 delete_option( 'mmb_settings' );
 delete_option( 'mmb_version' );
+delete_option( 'mmb_enable_logging' );
+delete_option( 'mmb_db_version' );
 
 // Delete transients.
 delete_transient( 'mmb_bundles_cache' );

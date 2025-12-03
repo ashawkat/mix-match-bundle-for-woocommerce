@@ -1,12 +1,13 @@
 # 🎁 Mix & Match Bundle for WooCommerce
 
-[![WordPress Plugin Version](https://img.shields.io/badge/WordPress-5.8%2B-blue.svg)](https://wordpress.org/)
-[![WooCommerce Version](https://img.shields.io/badge/WooCommerce-5.0%2B-purple.svg)](https://woocommerce.com/)
+[![Version](https://img.shields.io/badge/Version-1.0.2-blue.svg)](https://github.com/betatech/mix-match-bundle/releases)
+[![WordPress Plugin Version](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)](https://wordpress.org/)
+[![WooCommerce Version](https://img.shields.io/badge/WooCommerce-7.0%2B-purple.svg)](https://woocommerce.com/)
 [![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg)](https://www.php.net/)
 [![License](https://img.shields.io/badge/License-GPLv2%2B-green.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 [![HPOS Compatible](https://img.shields.io/badge/HPOS-Compatible-success.svg)](https://woocommerce.com/document/high-performance-order-storage/)
 
-> **Create customizable product bundles with tiered quantity discounts. Increase AOV with a beautiful bundle builder and real-time discount calculations.**
+> **Create customizable product bundles with tiered quantity discounts, advanced analytics, and comprehensive reporting. Increase AOV with a beautiful bundle builder and real-time discount calculations.**
 
 ![Mix & Match Bundle](https://demo.betatech.co/wp-content/uploads/2025/11/Banner-1.jpg)
 
@@ -32,17 +33,36 @@
 
 ## ✨ Features
 
+### 📊 Analytics & Reporting ✨ **NEW in 1.0.2!**
+
+- **Comprehensive Dashboard** - Beautiful analytics interface with Chart.js visualizations
+- **Coupon Tracking** - Monitor created, used, unused, and abandoned coupons
+- **Bundle Performance** - Track bundle popularity and usage trends
+- **Revenue Analytics** - View purchase history and revenue over time
+- **Cart Conversion** - Analyze cart and checkout conversion rates
+- **Date Filtering** - Last 7 days, 30 days, This Month, Last Month, Quarter, Custom Range
+- **CSV Export** - Export all analytics data for external analysis
+- **Real-Time Updates** - Live data visualization as orders come in
+
+### ⚙️ Settings & Diagnostics ✨ **NEW in 1.0.2!**
+
+- **Settings Page** - Control logging and plugin behavior
+- **WooCommerce Logger Integration** - Debug logging with settings toggle
+- **Diagnostics Tools** - System info, database checks, file permissions
+- **Enhanced Error Tracking** - Better debugging with categorized logs
+
 ### 🎯 Core Features
 
 - **Unlimited Bundles** - Create as many bundles as needed with unique configurations
 - **Tiered Discounts** - Set quantity-based discount tiers (e.g., buy 2 save 10%, buy 5 save 20%)
-- **Drag-and-Drop Product Ordering** - ✨ **NEW!** Visually reorder products with intuitive drag-and-drop interface
+- **Drag-and-Drop Product Ordering** - Visually reorder products with intuitive drag-and-drop interface
 - **Dual Bundle Modes**
   - 📝 **Selection Mode** - Customers pick products with checkboxes
   - 🔢 **Quantity Mode** - Customers set quantities for each product
 - **Variable Products** - Full support with variation dropdown selection
 - **Real-Time Calculations** - Live price updates as customers build bundles
 - **Shortcode Integration** - `[mmb_bundle id="X"]` - Place bundles anywhere
+- **Guest Checkout Support** - Works perfectly for logged-out users
 
 ### 🎨 Design & Customization
 

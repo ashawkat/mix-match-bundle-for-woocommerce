@@ -1,16 +1,16 @@
 === Mix & Match Bundle for WooCommerce ===
 Contributors: betatech, adnanshawkat
-Tags: woocommerce, product bundles, discounts, tiered pricing, mix and match
-Requires at least: 5.8
-Tested up to: 6.8
+Tags: woocommerce, bundles, discounts, tiered pricing, analytics
+Requires at least: 6.0
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-WC requires at least: 5.0
-WC tested up to: 8.5
+WC requires at least: 7.0
+WC tested up to: 10.3.6
 
-Create customizable product bundles with tiered quantity discounts. Increase AOV with beautiful bundle builder and real-time discount calculations.
+Create customizable bundles with tiered discounts, advanced analytics, and reporting. Increase AOV with beautiful bundle builder.
 
 == Description ==
 
@@ -22,9 +22,22 @@ Perfect for WooCommerce stores looking to increase sales through bundle deals, v
 
 = 🎯 Key Features =
 
+* **📊 Advanced Analytics Dashboard** - NEW! Comprehensive reporting and data visualization
+  * Track coupon usage (created vs used vs unused)
+  * Monitor bundle performance and popularity
+  * View revenue trends over time
+  * Analyze cart conversion rates
+  * Calculate bundle order rates
+  * Date filtering (Last 7 days, 30 days, This Month, Last Month, Quarter, Custom)
+  * Beautiful charts powered by Chart.js
+* **⚙️ Settings & Diagnostics** - NEW! Complete control and troubleshooting tools
+  * Enable/disable debug logging to WooCommerce logs
+  * System diagnostics page for troubleshooting
+  * Database status checks
+  * File permissions verification
 * **Unlimited Bundles** - Create as many bundles as you need with custom names and descriptions
 * **Tiered Discount System** - Set multiple quantity-based discount tiers (e.g., buy 2 get 10% off, buy 5 get 20% off)
-* **Drag-and-Drop Product Ordering** - NEW! Visually reorder products with intuitive drag-and-drop interface - control exactly how products appear to customers
+* **Drag-and-Drop Product Ordering** - Visually reorder products with intuitive drag-and-drop interface
 * **Dual Selection Modes**
   * **Selection Mode** - Customers choose products with checkboxes
   * **Quantity Mode** - Customers set quantities for each product
@@ -41,6 +54,7 @@ Perfect for WooCommerce stores looking to increase sales through bundle deals, v
 * **HPOS Compatible** - Fully compatible with WooCommerce High-Performance Order Storage
 * **Translation Ready** - Includes POT file and 28 pre-configured language files
 * **Developer Friendly** - Clean, modern code with comprehensive hooks and filters
+* **WordPress Standards Compliant** - Passes Plugin Check requirements for WordPress.org
 
 = 🌍 Supported Languages =
 
@@ -228,37 +242,86 @@ This is a full-featured plugin. We may release additional features based on user
 
 == Changelog ==
 
-= 1.0.1 - 2025-11-26 =
-* Added native support for FunnelKit, WooCommerce default, and WooCommerce Blocks sidecarts so discounted prices and bundle fees stay in sync everywhere.
-* Synced bundle discount markup into Woo fragments and AJAX payloads to prevent stale totals.
-* Removed development logging/debug helpers flagged by Plugin Check.
-* Updated translation template/files and localized “Bundle Discount” label for new UI elements.
+= 1.0.2 - 2024-12-03 =
+**🎉 Analytics, Settings & Enhanced Stability**
+
+**NEW FEATURES**
+* 📊 **Analytics Dashboard** - Comprehensive reporting with charts and graphs
+  - Coupon usage tracking (created, used, unused, abandoned)
+  - Bundle performance metrics and popularity rankings
+  - Purchase analytics with revenue tracking
+  - Cart conversion analytics
+  - Bundle order rate calculations
+  - Flexible date filtering (7 days, 30 days, monthly, quarterly, custom)
+  - CSV export for all analytics data
+  - Real-time Chart.js visualizations
+  - Fully responsive design
+* ⚙️ **Settings Page** - Control plugin behavior from one place
+  - Enable/disable debug logging
+  - Direct link to WooCommerce logs viewer
+  - Logging status indicators
+* 🔧 **Diagnostics Page** - Troubleshooting and system info
+  - Database table status checks
+  - Required functions verification
+  - File permissions checker
+  - System information display
+
+**IMPROVEMENTS**
+* ✅ Enhanced session handling for logged-out users - bundles now work perfectly for guest checkout
+* ✅ Optimized database queries with proper caching and prepared statements
+* ✅ Improved analytics data accuracy for revenue and conversion tracking
+* ✅ Better asset management with cache busting (no more stale CSS/JS)
+* ✅ Scoped CSS to prevent conflicts with other admin pages
+* ✅ Enhanced error handling throughout the plugin
+* ✅ WordPress Coding Standards compliance (passes Plugin Check)
+* ✅ Proper internationalization (i18n) implementation
+* ✅ Integrated WooCommerce logger for better debugging
+
+**BUG FIXES**
+* 🐛 Fixed bundle addition not working for logged-out users
+* 🐛 Fixed coupon application failing for guest checkout
+* 🐛 Fixed analytics showing incorrect or missing data
+* 🐛 Fixed JavaScript errors from missing DOM elements
+* 🐛 Fixed PHP count() errors with null values
+* 🐛 Fixed menu icons displaying incorrectly on non-plugin pages
+* 🐛 Fixed CSS conflicts with WordPress admin dashboard
+* 🐛 Fixed date range filters not applying correctly
+* 🐛 Fixed revenue calculations showing $0 despite completed orders
+
+**TECHNICAL**
+* Updated minimum WordPress version to 6.0
+* Updated minimum WooCommerce version to 7.0
+* Tested with WordPress 6.7.1
+* Tested with WooCommerce 9.4
+* Enhanced security with proper nonce verification
+* Improved code documentation
+* Better error messages for debugging
+
+= 1.0.1 - 2024-11-26 =
+* Added native support for FunnelKit, WooCommerce default, and WooCommerce Blocks sidecarts
+* Synced bundle discount markup into Woo fragments and AJAX payloads
+* Removed development logging/debug helpers flagged by Plugin Check
+* Updated translation template/files
 
 = 1.0.0 - 2024-11-14 =
 * 🎉 Initial release
-* ✅ Bundle creation and management interface
-* ✅ Unlimited bundles with products
-* ✅ Tiered discount system with unlimited tiers
-* ✅ Two bundle modes: Selection and Quantity
-* ✅ Variable product support with variation dropdowns
-* ✅ Real-time price calculations
-* ✅ Beautiful responsive frontend design
-* ✅ Mobile-optimized with sticky cart footer
-* ✅ Sidecart integration (FunnelKit, WooCommerce Side Cart, etc.)
-* ✅ Design customization (5 color options)
-* ✅ Custom text options
-* ✅ Visibility controls for all elements
-* ✅ Progress bar with checkmark indicators
-* ✅ Shortcode support
-* ✅ AJAX-powered smooth experience
-* ✅ HPOS compatibility
-* ✅ Translation ready with 28 language files
-* ✅ Professional vanilla JavaScript (no jQuery)
-* ✅ Modern CSS with variables
-* ✅ Security hardened (nonces, sanitization, escaping)
-* ✅ WordPress coding standards compliant
+* Bundle creation and management interface
+* Unlimited bundles with products
+* Tiered discount system
+* Variable product support
+* Real-time calculations
+* Beautiful responsive design
+* Mobile-optimized interface
+* Sidecart integration
+* Translation ready
 
 == Upgrade Notice ==
+
+= 1.0.2 =
+Important update! New analytics dashboard with comprehensive reporting, settings page with logging controls, enhanced guest checkout support, and WordPress Coding Standards compliance. Fixes multiple bugs and improves performance. Database tables will update automatically. Clear cache after upgrade.
+
+= 1.0.1 =
+Sidecart integration improvements and bug fixes.
 
 = 1.0.0 =
 Initial release of Mix & Match Bundle for WooCommerce. Create beautiful product bundles with tiered discounts today!

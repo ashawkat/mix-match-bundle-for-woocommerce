@@ -2,9 +2,9 @@
 /**
  * Plugin Name: Mix & Match Bundle for WooCommerce
  * Plugin URI: https://demo.betatech.co/mix-match-bundle
- * Description: Create customizable bundle promotions with tiered discounts based on quantity
- * Version: 1.0.1
- * Requires at least: 5.8
+ * Description: Create customizable bundle promotions with tiered discounts based on quantity. Now with advanced analytics, reporting, and coupon tracking.
+ * Version: 1.0.2
+ * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Betatech
  * Author URI: https://betatech.co
@@ -12,8 +12,8 @@
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: mix-match-bundle
  * Domain Path: /languages
- * WC requires at least: 5.0
- * WC tested up to: 8.5
+ * WC requires at least: 7.0
+ * WC tested up to: 9.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MMB_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MMB_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'MMB_VERSION', '1.0.1' );
+define( 'MMB_VERSION', '1.0.2' );
 define( 'MMB_DB_VERSION', '2.1' ); // Database version for schema updates
 
 /**
@@ -38,11 +38,23 @@ function mmb_get_table_name() {
     $raw_name = $wpdb->prefix . 'mmb_bundles';
     $sanitized = preg_replace( '/[^A-Za-z0-9_]/', '', $raw_name );
 
-    return $sanitized ?: $raw_name;
+    return esc_sql( $sanitized ?: $raw_name );
 }
 
 /**
- * Returns the SQL statement used for dbDelta to manage the bundles table.
+ * Apply database schema changes using dbDelta
+ *
+ * @since 2.1
+ *
+ * @param string $schema_sql The SQL schema to apply
+ */
+function mmb_dbDelta( $schema_sql ) {
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    dbDelta( $schema_sql );
+}
+
+/**
+ * Get the SQL statement used for dbDelta
  *
  * @since 2.1
  *
@@ -51,8 +63,7 @@ function mmb_get_table_name() {
 function mmb_get_table_schema_sql() {
     global $wpdb;
 
-    $table_name      = mmb_get_table_name();
-    $charset_collate = $wpdb->get_charset_collate();
+    $table_name = mmb_get_table_name();
 
     return "CREATE TABLE {$table_name} (
         id mediumint(9) NOT NULL AUTO_INCREMENT,
@@ -81,7 +92,7 @@ function mmb_get_table_schema_sql() {
         created_at datetime DEFAULT CURRENT_TIMESTAMP,
         updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         primary key (id)
-    ) {$charset_collate};";
+    )";
 }
 
 /**
@@ -133,6 +144,28 @@ function mmb_check_database_upgrade() {
     }
 }
 add_action( 'admin_init', 'mmb_check_database_upgrade' );
+
+/**
+ * Helper function for debug logging
+ * Logs to WooCommerce logger if logging is enabled in settings
+ * 
+ * @param string $message Log message
+ * @param string $level Log level (debug, info, notice, warning, error, critical, alert, emergency)
+ */
+function mmb_debug_log( $message, $level = 'info' ) {
+    // Check if logging is enabled in settings
+    $logging_enabled = get_option( 'mmb_enable_logging', 'no' );
+    
+    if ( $logging_enabled !== 'yes' ) {
+        return;
+    }
+    
+    // Use WooCommerce logger if available
+    if ( function_exists( 'wc_get_logger' ) ) {
+        $logger = wc_get_logger();
+        $logger->log( $level, $message, array( 'source' => 'mix-match-bundle' ) );
+    }
+}
 
 /**
  * Check if WooCommerce is active
@@ -219,6 +252,7 @@ class Mix_Match_Bundle {
         // Admin hooks
         add_action( 'admin_menu', [ $this, 'register_admin_menu' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
+        add_action( 'admin_head', [ $this, 'add_menu_icon_styles' ] ); // Inline styles for menu icon
         add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), [ $this, 'add_action_links' ] );
         
         // Frontend hooks
@@ -265,6 +299,57 @@ class Mix_Match_Bundle {
             MMB_PLUGIN_URL . 'assets/img/mix-match-icon.svg',
             30
         );
+        
+        // Add analytics submenu page
+        add_submenu_page(
+            'mix-match-bundles',
+            __( 'Bundle Analytics', 'mix-match-bundle' ),
+            __( 'Analytics', 'mix-match-bundle' ),
+            'manage_options',
+            'mmb-analytics',
+            [ $this, 'analytics_page' ]
+        );
+        
+        // Add diagnostics submenu page
+        add_submenu_page(
+            'mix-match-bundles',
+            __( 'Diagnostics', 'mix-match-bundle' ),
+            __( 'Diagnostics', 'mix-match-bundle' ),
+            'manage_options',
+            'mmb-diagnostics',
+            [ $this, 'diagnostics_page' ]
+        );
+        
+        // Add settings submenu page
+        add_submenu_page(
+            'mix-match-bundles',
+            __( 'Settings', 'mix-match-bundle' ),
+            __( 'Settings', 'mix-match-bundle' ),
+            'manage_options',
+            'mmb-settings',
+            [ $this, 'settings_page' ]
+        );
+    }
+    
+    /**
+     * Add inline styles for menu icon on all admin pages
+     */
+    public function add_menu_icon_styles() {
+        ?>
+        <style type="text/css">
+            #adminmenu #toplevel_page_mix-match-bundles .wp-menu-image img {
+                width: 20px !important;
+                height: 20px !important;
+                padding: 6px 0 !important;
+                opacity: 0.6;
+            }
+            #adminmenu #toplevel_page_mix-match-bundles:hover .wp-menu-image img,
+            #adminmenu #toplevel_page_mix-match-bundles.wp-has-current-submenu .wp-menu-image img,
+            #adminmenu #toplevel_page_mix-match-bundles.current .wp-menu-image img {
+                opacity: 1;
+            }
+        </style>
+        <?php
     }
     
     public function admin_page() {
@@ -275,20 +360,57 @@ class Mix_Match_Bundle {
     }
     
     public function enqueue_admin_scripts( $hook ) {
-        // Always load icon styles for the menu
-        wp_enqueue_style( 'mix-match-admin-icon', MMB_PLUGIN_URL . 'assets/css/admin.css', [], MMB_VERSION );
+        // Always ensure dashicons are loaded on all admin pages
+        wp_enqueue_style( 'dashicons' );
         
-        // Only load full admin scripts on plugin pages
-        if ( strpos( $hook, 'mix-match' ) === false ) {
+        // Only load plugin-specific assets on our plugin pages
+        if ( strpos( $hook, 'mix-match' ) === false && strpos( $hook, 'mmb-' ) === false ) {
             return;
         }
         
-        wp_enqueue_script( 'mix-match-admin', MMB_PLUGIN_URL . 'assets/js/admin.js', [ 'jquery', 'wp-api' ], MMB_VERSION, true );
+        // Load main admin styles only on Mix & Match pages
+        // Using filemtime for cache busting during development
+        $css_version = MMB_VERSION;
+        $js_version = MMB_VERSION;
         
-        wp_localize_script( 'mix-match-admin', 'mmb_admin', [
+        if ( file_exists( MMB_PLUGIN_DIR . 'assets/css/admin.css' ) ) {
+            $css_version .= '-' . filemtime( MMB_PLUGIN_DIR . 'assets/css/admin.css' );
+        }
+        if ( file_exists( MMB_PLUGIN_DIR . 'assets/js/admin.js' ) ) {
+            $js_version .= '-' . filemtime( MMB_PLUGIN_DIR . 'assets/js/admin.js' );
+        }
+        
+        wp_enqueue_style( 'mix-match-admin', MMB_PLUGIN_URL . 'assets/css/admin.css', array( 'dashicons' ), $css_version );
+        wp_enqueue_script( 'mix-match-admin', MMB_PLUGIN_URL . 'assets/js/admin.js', array( 'jquery', 'wp-api' ), $js_version, true );
+        
+        wp_localize_script( 'mix-match-admin', 'mmb_admin', array(
             'nonce' => wp_create_nonce( 'mmb_admin_nonce' ),
             'ajaxurl' => admin_url( 'admin-ajax.php' ),
-        ]);
+        ));
+        
+        // Analytics-specific assets (only on analytics page)
+        if ( strpos( $hook, 'mmb-analytics' ) !== false ) {
+            $analytics_css_version = MMB_VERSION;
+            $analytics_js_version = MMB_VERSION;
+            
+            if ( file_exists( MMB_PLUGIN_DIR . 'assets/css/analytics-dashboard.css' ) ) {
+                $analytics_css_version .= '-' . filemtime( MMB_PLUGIN_DIR . 'assets/css/analytics-dashboard.css' );
+            }
+            if ( file_exists( MMB_PLUGIN_DIR . 'assets/js/analytics-dashboard.js' ) ) {
+                $analytics_js_version .= '-' . filemtime( MMB_PLUGIN_DIR . 'assets/js/analytics-dashboard.js' );
+            }
+            
+            wp_enqueue_style( 'mmb-analytics-dashboard', MMB_PLUGIN_URL . 'assets/css/analytics-dashboard.css', array( 'dashicons' ), $analytics_css_version );
+            
+            $chart_js_version = '4.4.0';
+            $chart_js_path    = MMB_PLUGIN_DIR . 'assets/js/vendor/chart.umd.min.js';
+            if ( file_exists( $chart_js_path ) ) {
+                $chart_js_version .= '-' . filemtime( $chart_js_path );
+            }
+            
+            wp_enqueue_script( 'mmb-chart-js', MMB_PLUGIN_URL . 'assets/js/vendor/chart.umd.min.js', array(), $chart_js_version, true );
+            wp_enqueue_script( 'mmb-analytics-dashboard', MMB_PLUGIN_URL . 'assets/js/analytics-dashboard.js', array( 'jquery', 'mmb-chart-js' ), $analytics_js_version, true );
+        }
     }
     
     public function enqueue_frontend_scripts() {
@@ -403,14 +525,10 @@ class Mix_Match_Bundle {
             dbDelta( mmb_get_table_schema_sql() );
             
             // Log success for debugging
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'MMB: Database upgrade successful' );
-            }
+            mmb_debug_log( 'MMB: Database upgrade successful' );
         } catch ( Exception $e ) {
             // Log error for debugging
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'MMB Database upgrade error: ' . $e->getMessage() );
-            }
+            mmb_debug_log( 'MMB Database upgrade error: ' . $e->getMessage(), 'error' );
             
             // Store error for admin notice
             update_option( 'mmb_db_upgrade_error', $e->getMessage() );
@@ -431,14 +549,10 @@ class Mix_Match_Bundle {
             flush_rewrite_rules();
             
             // Log success for debugging
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'MMB: Plugin activation successful' );
-            }
+            mmb_debug_log( 'MMB: Plugin activation successful' );
         } catch ( Exception $e ) {
             // Log error for debugging
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'MMB Plugin activation error: ' . $e->getMessage() );
-            }
+            mmb_debug_log( 'MMB Plugin activation error: ' . $e->getMessage(), 'error' );
             
             // Store error for admin notice
             update_option( 'mmb_activation_error', $e->getMessage() );
@@ -446,6 +560,75 @@ class Mix_Match_Bundle {
             // Re-throw to let WordPress handle the error
             throw $e;
         }
+    }
+
+    public function analytics_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+        
+        // Handle form submissions for date filtering
+        $post_nonce = isset( $_POST['mmb_analytics_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['mmb_analytics_nonce'] ) ) : '';
+        if ( $post_nonce && wp_verify_nonce( $post_nonce, 'mmb_analytics_action' ) ) {
+            $this->handle_analytics_form_submission();
+        }
+        
+        $date_range = '30days';
+        $start_date = '';
+        $end_date   = '';
+        
+        // Prefer GET parameters with nonce verification
+        $get_nonce = isset( $_GET['mmb_analytics_nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['mmb_analytics_nonce'] ) ) : '';
+        if ( $get_nonce && wp_verify_nonce( $get_nonce, 'mmb_analytics_filter' ) ) {
+            $date_range = isset( $_GET['date_range'] ) ? sanitize_text_field( wp_unslash( $_GET['date_range'] ) ) : $date_range;
+            $start_date = isset( $_GET['start_date'] ) ? sanitize_text_field( wp_unslash( $_GET['start_date'] ) ) : '';
+            $end_date   = isset( $_GET['end_date'] ) ? sanitize_text_field( wp_unslash( $_GET['end_date'] ) ) : '';
+        } else {
+            // Fallback to POST (legacy) if nonce missing
+            $date_range = isset( $_POST['date_range'] ) ? sanitize_text_field( wp_unslash( $_POST['date_range'] ) ) : $date_range;
+            $start_date = isset( $_POST['start_date'] ) ? sanitize_text_field( wp_unslash( $_POST['start_date'] ) ) : $start_date;
+            $end_date   = isset( $_POST['end_date'] ) ? sanitize_text_field( wp_unslash( $_POST['end_date'] ) ) : $end_date;
+        }
+        
+        // Get analytics data using global function
+        $analytics_data = mmb_get_analytics_data( $date_range, $start_date, $end_date );
+        
+        include MMB_PLUGIN_DIR . 'admin/analytics-dashboard.php';
+    }
+    
+    public function diagnostics_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+        
+        include MMB_PLUGIN_DIR . 'admin/diagnostics.php';
+    }
+    
+    public function settings_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+        
+        // Handle settings form submission
+        $settings_nonce = isset( $_POST['mmb_settings_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['mmb_settings_nonce'] ) ) : '';
+        if ( $settings_nonce && wp_verify_nonce( $settings_nonce, 'mmb_settings_action' ) ) {
+            $enable_logging = isset( $_POST['mmb_enable_logging'] ) ? 'yes' : 'no';
+            update_option( 'mmb_enable_logging', $enable_logging );
+            
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved successfully!', 'mix-match-bundle' ) . '</p></div>';
+        }
+        
+        include MMB_PLUGIN_DIR . 'admin/settings.php';
+    }
+    
+    /**
+     * Handle analytics form submission
+     */
+    private function handle_analytics_form_submission() {
+        // Form data will be processed in get_analytics_data method
+        // Redirect to prevent form resubmission
+        wp_safe_redirect( add_query_arg( 'settings-updated', 'true', menu_page_url( 'mmb-analytics' ) ) );
+        exit;
     }
 }
 
@@ -725,6 +908,20 @@ function mmb_add_bundle_to_cart() {
     // Verify nonce for security
     check_ajax_referer( 'mmb_frontend_nonce', 'nonce' );
     
+    // Ensure session is available for all users (including logged-out)
+    if ( ! WC()->session ) {
+        if ( ! class_exists( 'WC_Session_Handler' ) ) {
+            include_once WC_ABSPATH . 'includes/class-wc-session-handler.php';
+        }
+        WC()->session = new WC_Session_Handler();
+        WC()->session->init();
+        
+        // Set session cookie for guest users
+        if ( ! headers_sent() && ! is_user_logged_in() ) {
+            WC()->session->set_customer_session_cookie( true );
+        }
+    }
+    
     $bundle_id = isset( $_POST['bundle_id'] ) ? intval( wp_unslash( $_POST['bundle_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     $bundle_items_json = isset( $_POST['bundle_items'] ) ? sanitize_textarea_field( wp_unslash( $_POST['bundle_items'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
     $discount_amount = isset( $_POST['discount_amount'] ) ? floatval( wp_unslash( $_POST['discount_amount'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -803,9 +1000,8 @@ function mmb_add_bundle_to_cart() {
         ] );
         
         // Debug logging
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'MMB: Empty product list handled properly' );
-            error_log( 'MMB: Response structure: ' . json_encode( [
+        mmb_debug_log( 'MMB: Empty product list handled properly' );
+        mmb_debug_log( 'MMB: Response structure: ' . json_encode( [
                 'success' => false,
                 'message' => 'No products available to add to bundle',
                 'data' => [
@@ -817,7 +1013,6 @@ function mmb_add_bundle_to_cart() {
                     'discount_amount' => 0,
                 ]
             ] ) );
-        }
     }
     
     wp_send_json_success( __( 'Bundle added to session', 'mix-match-bundle' ) );
@@ -825,6 +1020,20 @@ function mmb_add_bundle_to_cart() {
 
 function mmb_wc_ajax_add_to_cart() {
     try {
+        // Ensure session is available for all users (including logged-out)
+        if ( ! WC()->session ) {
+            if ( ! class_exists( 'WC_Session_Handler' ) ) {
+                include_once WC_ABSPATH . 'includes/class-wc-session-handler.php';
+            }
+            WC()->session = new WC_Session_Handler();
+            WC()->session->init();
+            
+            // Set session cookie for guest users
+            if ( ! headers_sent() && ! is_user_logged_in() ) {
+                WC()->session->set_customer_session_cookie( true );
+            }
+        }
+        
         if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
             wp_send_json_error( __( 'WooCommerce not available', 'mix-match-bundle' ) );
             return;
@@ -932,7 +1141,7 @@ function mmb_wc_ajax_add_to_cart() {
                             // Get cart instance to create and apply coupon
                             if ( ! class_exists( 'MMB_Cart' ) ) {
                                 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                                    error_log( 'MMB: MMB_Cart class not found' );
+                                    mmb_debug_log( 'MMB: MMB_Cart class not found' );
                                 }
                             } else {
                                 $cart_handler = MMB_Cart::get_instance();
@@ -966,11 +1175,9 @@ function mmb_wc_ajax_add_to_cart() {
                                                 WC()->cart->calculate_totals();
                                                 
                                                 // Debug logging
-                                                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                                                    error_log( 'MMB: Coupon Applied - Code: ' . $coupon_code );
-                                                    error_log( 'MMB: Coupon Amount: ' . $discount_amount );
-                                                    error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
-                                                }
+                                                mmb_debug_log( 'MMB: Coupon Applied - Code: ' . $coupon_code );
+                                                mmb_debug_log( 'MMB: Coupon Amount: ' . $discount_amount );
+                                                mmb_debug_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
                                             }
                                         }
                                     }
@@ -981,9 +1188,7 @@ function mmb_wc_ajax_add_to_cart() {
                 }
             } catch ( Exception $e ) {
                 // Log error for debugging
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'MMB Coupon Error: ' . $e->getMessage() );
-                }
+                mmb_debug_log( 'MMB Coupon Error: ' . $e->getMessage(), 'error' );
             }
 
             // Final calculation to ensure all totals are correct (including coupon discount)
@@ -1063,10 +1268,8 @@ function mmb_wc_ajax_add_to_cart() {
         }
     } catch ( Exception $e ) {
         // Log full error for debugging
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'MMB AJAX Error: ' . $e->getMessage() );
-            error_log( 'MMB AJAX Stack Trace: ' . $e->getTraceAsString() );
-        }
+        mmb_debug_log( 'MMB AJAX Error: ' . $e->getMessage(), 'error' );
+        mmb_debug_log( 'MMB AJAX Stack Trace: ' . $e->getTraceAsString(), 'error' );
         
         // Send error response to frontend
         wp_send_json_error( [
@@ -1075,10 +1278,8 @@ function mmb_wc_ajax_add_to_cart() {
         ] );
     } catch ( Error $e ) {
         // Catch fatal errors (PHP 7+)
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'MMB AJAX Fatal Error: ' . $e->getMessage() );
-            error_log( 'MMB AJAX Stack Trace: ' . $e->getTraceAsString() );
-        }
+        mmb_debug_log( 'MMB AJAX Fatal Error: ' . $e->getMessage(), 'error' );
+        mmb_debug_log( 'MMB AJAX Stack Trace: ' . $e->getTraceAsString(), 'error' );
         
         // Send error response to frontend
         wp_send_json_error( [
@@ -1145,19 +1346,35 @@ function mmb_cleanup_unused_coupons() {
     /** @var wpdb $wpdb WordPress database abstraction object. */
     global $wpdb;
     
-    // Get all coupons created by this plugin
-    $coupon_posts = get_posts( [
-        'post_type' => 'shop_coupon',
-        'posts_per_page' => -1,
-        'post_status' => 'publish',
-        'meta_query' => [
-            [
-                'key' => 'coupon_code',
-                'value' => 'mmb_bundle_',
-                'compare' => 'LIKE',
-            ],
-        ],
-    ] );
+    // Check if we have cached results
+    $cache_key = 'mmb_bundle_coupons_cleanup';
+    $cache_group = 'mix_match_bundle';
+    $cached = wp_cache_get( $cache_key, $cache_group );
+    
+    if ( false !== $cached ) {
+        return $cached;
+    }
+    
+    // Use direct SQL query for better performance instead of meta_query
+    // 
+    // WordPress APIs like get_posts() could be used here, but a direct query is preferred because:
+    // 1. We need to join posts and postmeta tables which is more efficient with direct SQL
+    // 2. We need to filter by meta_value with LIKE which is slow with meta_query
+    // 3. We're processing potentially many coupons, so direct query with proper caching is more performant
+    // 4. The query is properly secured with $wpdb->prepare() to prevent SQL injection
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- performance optimization, caching handled externally.
+    $coupon_posts = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT p.ID 
+            FROM {$wpdb->posts} p 
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id 
+            WHERE p.post_type = 'shop_coupon' 
+            AND p.post_status = 'publish' 
+            AND pm.meta_key = 'coupon_code' 
+            AND pm.meta_value LIKE %s",
+            'mmb_bundle_%'
+        )
+    );
     
     $deleted_count = 0;
     $kept_count = 0;
@@ -1189,7 +1406,7 @@ function mmb_cleanup_unused_coupons() {
             
             // Debug logging
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( sprintf(
+                mmb_debug_log( sprintf(
                     'MMB Cleanup: Keeping used coupon %s (used %d times)',
                     $coupon->get_code(),
                     $usage_count
@@ -1202,7 +1419,7 @@ function mmb_cleanup_unused_coupons() {
             
             // Debug logging
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( sprintf(
+                mmb_debug_log( sprintf(
                     'MMB Cleanup: Deleted unused coupon %s (age: %.1f hours)',
                     $coupon->get_code(),
                     $age_in_hours
@@ -1211,19 +1428,23 @@ function mmb_cleanup_unused_coupons() {
         }
     }
     
+    // Cache the result for 1 hour
+    $result = [
+        'deleted' => $deleted_count,
+        'kept' => $kept_count,
+    ];
+    wp_cache_set( $cache_key, $result, $cache_group, HOUR_IN_SECONDS );
+    
     // Log summary
     if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( sprintf(
+        mmb_debug_log( sprintf(
             'MMB Cleanup: Completed. Deleted: %d, Kept: %d',
             $deleted_count,
             $kept_count
         ) );
     }
     
-    return [
-        'deleted' => $deleted_count,
-        'kept' => $kept_count,
-    ];
+    return $result;
 }
 
 // Add manual cleanup action for testing/debugging
@@ -1241,7 +1462,8 @@ function mmb_manual_coupon_cleanup() {
             printf(
                 '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
                 sprintf(
-                    esc_html__( 'Bundle coupon cleanup completed. Deleted: %d, Kept: %d', 'mix-match-bundle' ),
+                    /* translators: 1: Number of deleted coupons, 2: Number of kept coupons */
+                    esc_html__( 'Bundle coupon cleanup completed. Deleted: %1$d, Kept: %2$d', 'mix-match-bundle' ),
                     absint( $result['deleted'] ),
                     absint( $result['kept'] )
                 )
@@ -1264,7 +1486,21 @@ function mmb_deactivate_cleanup_schedule() {
 add_action( 'woocommerce_before_checkout_process', 'mmb_ensure_coupon_applied', 10 );
 
 function mmb_ensure_coupon_applied() {
-    if ( ! WC()->cart || ! WC()->session ) {
+    // Ensure session is available for all users (including logged-out)
+    if ( ! WC()->session ) {
+        if ( ! class_exists( 'WC_Session_Handler' ) ) {
+            include_once WC_ABSPATH . 'includes/class-wc-session-handler.php';
+        }
+        WC()->session = new WC_Session_Handler();
+        WC()->session->init();
+        
+        // Set session cookie for guest users
+        if ( ! headers_sent() && ! is_user_logged_in() ) {
+            WC()->session->set_customer_session_cookie( true );
+        }
+    }
+    
+    if ( ! WC()->cart ) {
         return;
     }
     
@@ -1285,9 +1521,9 @@ function mmb_ensure_coupon_applied() {
         
         // Debug logging
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'MMB: Coupon Applied on Checkout - Code: ' . $coupon_code );
-            error_log( 'MMB: Coupon Amount: ' . $discount_amount );
-            error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+            mmb_debug_log( 'MMB: Coupon Applied on Checkout - Code: ' . $coupon_code );
+            mmb_debug_log( 'MMB: Coupon Amount: ' . $discount_amount );
+            mmb_debug_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
         }
         
         // Recalculate totals immediately after coupon application
@@ -1299,7 +1535,21 @@ function mmb_ensure_coupon_applied() {
 add_action( 'woocommerce_before_cart', 'mmb_ensure_coupon_applied_on_cart', 10 );
 
 function mmb_ensure_coupon_applied_on_cart() {
-    if ( ! WC()->cart || ! WC()->session ) {
+    // Ensure session is available for all users (including logged-out)
+    if ( ! WC()->session ) {
+        if ( ! class_exists( 'WC_Session_Handler' ) ) {
+            include_once WC_ABSPATH . 'includes/class-wc-session-handler.php';
+        }
+        WC()->session = new WC_Session_Handler();
+        WC()->session->init();
+        
+        // Set session cookie for guest users
+        if ( ! headers_sent() && ! is_user_logged_in() ) {
+            WC()->session->set_customer_session_cookie( true );
+        }
+    }
+    
+    if ( ! WC()->cart ) {
         return;
     }
     
@@ -1320,9 +1570,9 @@ function mmb_ensure_coupon_applied_on_cart() {
         
         // Debug logging
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'MMB: Coupon Applied on Cart - Code: ' . $coupon_code );
-            error_log( 'MMB: Coupon Amount: ' . $discount_amount );
-            error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+            mmb_debug_log( 'MMB: Coupon Applied on Cart - Code: ' . $coupon_code );
+            mmb_debug_log( 'MMB: Coupon Amount: ' . $discount_amount );
+            mmb_debug_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
         }
         
         // Recalculate totals immediately after coupon application
@@ -1334,7 +1584,21 @@ function mmb_ensure_coupon_applied_on_cart() {
 add_action( 'woocommerce_before_mini_cart_contents', 'mmb_ensure_coupon_applied_on_mini_cart', 10 );
 
 function mmb_ensure_coupon_applied_on_mini_cart() {
-    if ( ! WC()->cart || ! WC()->session ) {
+    // Ensure session is available for all users (including logged-out)
+    if ( ! WC()->session ) {
+        if ( ! class_exists( 'WC_Session_Handler' ) ) {
+            include_once WC_ABSPATH . 'includes/class-wc-session-handler.php';
+        }
+        WC()->session = new WC_Session_Handler();
+        WC()->session->init();
+        
+        // Set session cookie for guest users
+        if ( ! headers_sent() && ! is_user_logged_in() ) {
+            WC()->session->set_customer_session_cookie( true );
+        }
+    }
+    
+    if ( ! WC()->cart ) {
         return;
     }
     
@@ -1355,9 +1619,9 @@ function mmb_ensure_coupon_applied_on_mini_cart() {
         
         // Debug logging
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'MMB: Coupon Applied on Mini-Cart - Code: ' . $coupon_code );
-            error_log( 'MMB: Coupon Amount: ' . $discount_amount );
-            error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+            mmb_debug_log( 'MMB: Coupon Applied on Mini-Cart - Code: ' . $coupon_code );
+            mmb_debug_log( 'MMB: Coupon Amount: ' . $discount_amount );
+            mmb_debug_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
         }
         
         // Recalculate totals immediately after coupon application
@@ -1369,7 +1633,21 @@ function mmb_ensure_coupon_applied_on_mini_cart() {
 add_action( 'woocommerce_cart_loaded_from_session', 'mmb_ensure_coupon_applied_on_cart_refresh', 10 );
 
 function mmb_ensure_coupon_applied_on_cart_refresh() {
-    if ( ! WC()->cart || ! WC()->session ) {
+    // Ensure session is available for all users (including logged-out)
+    if ( ! WC()->session ) {
+        if ( ! class_exists( 'WC_Session_Handler' ) ) {
+            include_once WC_ABSPATH . 'includes/class-wc-session-handler.php';
+        }
+        WC()->session = new WC_Session_Handler();
+        WC()->session->init();
+        
+        // Set session cookie for guest users
+        if ( ! headers_sent() && ! is_user_logged_in() ) {
+            WC()->session->set_customer_session_cookie( true );
+        }
+    }
+    
+    if ( ! WC()->cart ) {
         return;
     }
     
@@ -1390,13 +1668,830 @@ function mmb_ensure_coupon_applied_on_cart_refresh() {
         
         // Debug logging
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'MMB: Coupon Applied on Cart Refresh - Code: ' . $coupon_code );
-            error_log( 'MMB: Coupon Amount: ' . $discount_amount );
-            error_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
+            mmb_debug_log( 'MMB: Coupon Applied on Cart Refresh - Code: ' . $coupon_code );
+            mmb_debug_log( 'MMB: Coupon Amount: ' . $discount_amount );
+            mmb_debug_log( 'MMB: Cart Totals After: ' . json_encode( WC()->cart->get_totals() ) );
         }
         
         // Recalculate totals immediately after coupon application
         WC()->cart->calculate_totals();
     }
+}
+
+/**
+ * Get analytics data for the dashboard
+ *
+ * @param string $date_range Date range preset
+ * @param string $start_date Custom start date
+ * @param string $end_date Custom end date
+ * @return array Analytics data
+ */
+function mmb_get_analytics_data( $date_range = '30days', $start_date = '', $end_date = '' ) {
+    global $wpdb;
+    
+    $current_time = current_time( 'timestamp', true );
+    
+    // Calculate date range based on preset or custom dates
+    if ( $start_date && $end_date ) {
+        // Custom date range
+        $start_timestamp = strtotime( $start_date . ' 00:00:00' );
+        $end_timestamp = strtotime( $end_date . ' 23:59:59' );
+    } else {
+        // Preset date ranges
+        switch ( $date_range ) {
+            case '7days':
+                $end_timestamp = strtotime( 'today 23:59:59', $current_time );
+                $start_timestamp = strtotime( '-7 days', $end_timestamp );
+                break;
+                
+            case '30days':
+                $end_timestamp = strtotime( 'today 23:59:59', $current_time );
+                $start_timestamp = strtotime( '-30 days', $end_timestamp );
+                break;
+                
+            case '90days':
+                $end_timestamp = strtotime( 'today 23:59:59', $current_time );
+                $start_timestamp = strtotime( '-90 days', $end_timestamp );
+                break;
+                
+            case 'this_month':
+                $start_timestamp = strtotime( 'first day of this month 00:00:00', $current_time );
+                $end_timestamp = strtotime( 'last day of this month 23:59:59', $current_time );
+                break;
+                
+            case 'last_month':
+                $start_timestamp = strtotime( 'first day of last month 00:00:00', $current_time );
+                $end_timestamp = strtotime( 'last day of last month 23:59:59', $current_time );
+                break;
+                
+            case 'this_quarter':
+                $current_month = gmdate( 'n', $current_time );
+                $current_year  = gmdate( 'Y', $current_time );
+                $quarter_start_month = floor( ( $current_month - 1 ) / 3 ) * 3 + 1;
+                $start_timestamp = strtotime( "$current_year-$quarter_start_month-01 00:00:00" );
+                $end_timestamp = strtotime( 'today 23:59:59', $current_time );
+                break;
+                
+            case 'this_year':
+                $start_timestamp = strtotime( 'first day of January ' . gmdate( 'Y', $current_time ) . ' 00:00:00' );
+                $end_timestamp = strtotime( 'today 23:59:59', $current_time );
+                break;
+                
+            default:
+                // Default to last 30 days
+                $end_timestamp = strtotime( 'today 23:59:59', $current_time );
+                $start_timestamp = strtotime( '-30 days', $end_timestamp );
+                break;
+        }
+    }
+    
+    // Format dates for SQL query
+    $start_date_sql = gmdate( 'Y-m-d H:i:s', $start_timestamp );
+    $end_date_sql   = gmdate( 'Y-m-d H:i:s', $end_timestamp );
+    
+    // Get all analytics data
+    $coupon_analytics = mmb_get_coupon_analytics( $start_date_sql, $end_date_sql );
+    $bundle_analytics = mmb_get_bundle_analytics( $start_date_sql, $end_date_sql );
+    $purchase_analytics = mmb_get_purchase_analytics( $start_date_sql, $end_date_sql );
+    $cart_analytics = mmb_get_cart_analytics( $start_date_sql, $end_date_sql );
+    $checkout_analytics = mmb_get_checkout_analytics( $start_date_sql, $end_date_sql );
+    $conversion_analytics = mmb_get_conversion_analytics( $start_date_sql, $end_date_sql );
+    $bundle_performance = mmb_get_bundle_performance_analytics( $start_date_sql, $end_date_sql );
+    
+    return [
+        'coupon_analytics' => $coupon_analytics,
+        'bundle_analytics' => $bundle_analytics,
+        'purchase_analytics' => $purchase_analytics,
+        'cart_analytics' => $cart_analytics,
+        'checkout_analytics' => $checkout_analytics,
+        'conversion_analytics' => $conversion_analytics,
+        'bundle_performance' => $bundle_performance,
+        'date_range' => [
+            'start' => $start_date ? $start_date : gmdate( 'Y-m-d', $start_timestamp ),
+            'end'   => $end_date ? $end_date : gmdate( 'Y-m-d', $end_timestamp ),
+            'label' => mmb_get_date_range_label( $date_range, $start_timestamp, $end_timestamp )
+        ]
+    ];
+}
+
+/**
+ * Get coupon analytics data
+ */
+function mmb_get_coupon_analytics( $start_date, $end_date ) {
+    global $wpdb;
+    
+    // Get coupon data - WooCommerce stores coupon code as post_title
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- complex join query for performance, no caching needed for analytics.
+    $coupon_data = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT 
+                p.ID,
+                p.post_title as coupon_code,
+                p.post_date,
+                pm_amount.meta_value as discount_amount,
+                pm_usage.meta_value as usage_count,
+                pm_limit.meta_value as usage_limit
+            FROM {$wpdb->posts} p
+            LEFT JOIN {$wpdb->postmeta} pm_amount ON p.ID = pm_amount.post_id AND pm_amount.meta_key = 'coupon_amount'
+            LEFT JOIN {$wpdb->postmeta} pm_usage ON p.ID = pm_usage.post_id AND pm_usage.meta_key = 'usage_count'
+            LEFT JOIN {$wpdb->postmeta} pm_limit ON p.ID = pm_limit.post_id AND pm_limit.meta_key = 'usage_limit'
+            WHERE p.post_type = 'shop_coupon'
+            AND p.post_status = 'publish'
+            AND p.post_title LIKE %s
+            AND p.post_date BETWEEN %s AND %s
+            ORDER BY p.post_date DESC",
+            'mmb_bundle_%',
+            $start_date,
+            $end_date
+        )
+    );
+    
+    // Ensure we have an array
+    if ( ! is_array( $coupon_data ) ) {
+        $coupon_data = array();
+    }
+    
+    $total_created = count( $coupon_data );
+    $total_used = 0;
+    $total_unused = 0;
+    $total_discount = 0;
+    
+    foreach ( $coupon_data as $coupon ) {
+        if ( ! is_object( $coupon ) ) {
+            continue;
+        }
+        
+        $usage_count = isset( $coupon->usage_count ) ? intval( $coupon->usage_count ) : 0;
+        $discount_amount = isset( $coupon->discount_amount ) ? floatval( $coupon->discount_amount ) : 0;
+        
+        if ( $usage_count > 0 ) {
+            $total_used++;
+            $total_discount += $discount_amount * $usage_count;
+        } else {
+            $total_unused++;
+        }
+    }
+    
+    return array(
+        'total_created' => $total_created,
+        'total_used' => $total_used,
+        'total_unused' => $total_unused,
+        'total_discount' => $total_discount,
+        'usage_rate' => $total_created > 0 ? round( ( $total_used / $total_created ) * 100, 2 ) : 0,
+        'coupons' => $coupon_data
+    );
+}
+
+/**
+ * Get bundle analytics data
+ */
+function mmb_get_bundle_analytics( $start_date, $end_date ) {
+    global $wpdb;
+    
+    // Get ALL bundles (not filtered by date - we want to show total bundles available)
+    $table_name = mmb_get_table_name();
+    // Check if table exists
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence check, minimal impact.
+    $table_exists = $wpdb->get_var(
+        $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name )
+    );
+    
+    if ( ! $table_exists ) {
+        return array(
+            'total_bundles' => 0,
+            'enabled_bundles' => 0,
+            'bundles' => array()
+        );
+    }
+    
+    // Get all bundles
+    $bundle_table = esc_sql( $table_name );
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- custom table query, caching handled by calling function.
+    $bundle_data  = $wpdb->get_results(
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table name sanitized above.
+        "SELECT * FROM {$bundle_table} ORDER BY created_at DESC"
+    );
+    
+    // Ensure we have an array
+    if ( ! is_array( $bundle_data ) ) {
+        $bundle_data = array();
+    }
+    
+    $total_bundles = count( $bundle_data );
+    $enabled_bundles = 0;
+    
+    foreach ( $bundle_data as $bundle ) {
+        if ( isset( $bundle->enabled ) && $bundle->enabled ) {
+            $enabled_bundles++;
+        }
+    }
+    
+    return array(
+        'total_bundles' => $total_bundles,
+        'enabled_bundles' => $enabled_bundles,
+        'bundles' => $bundle_data
+    );
+}
+
+/**
+ * Get purchase analytics data
+ */
+function mmb_get_purchase_analytics( $start_date, $end_date ) {
+    global $wpdb;
+    
+    // First, get all orders in the date range
+    // Include both shop_order and shop_order_placehold (for orders stuck in placeholder state)
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- querying WooCommerce orders, no caching needed for analytics.
+    $all_orders = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT 
+                o.ID,
+                o.post_date,
+                o.post_date_gmt,
+                o.post_status,
+                o.post_type
+            FROM {$wpdb->posts} o
+            WHERE o.post_type IN ( 'shop_order', 'shop_order_placehold' )
+            AND o.post_status IN ( 'wc-completed', 'wc-processing', 'wc-on-hold', 'wc-pending', 'draft' )
+            AND (o.post_date BETWEEN %s AND %s OR o.post_date_gmt BETWEEN %s AND %s)
+            ORDER BY o.post_date DESC",
+            $start_date,
+            $end_date,
+            $start_date,
+            $end_date
+        )
+    );
+    
+    // Debug: Log the query
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        mmb_debug_log( sprintf( 
+            'Purchase Analytics Query - Date Range: %s to %s, Found %d orders', 
+            $start_date, 
+            $end_date,
+            count( $all_orders )
+        ) );
+    }
+    
+    $order_data = array();
+    $debug_info = array();
+    
+    // Check each order for bundle coupons
+    foreach ( $all_orders as $order ) {
+        $order_id = $order->ID;
+        
+        // Get order object
+        $wc_order = wc_get_order( $order_id );
+        if ( ! $wc_order ) {
+            continue;
+        }
+        
+        // Check if order has bundle coupon
+        $has_bundle_coupon = false;
+        $used_coupons = $wc_order->get_coupon_codes();
+        
+        // Debug: Log all coupons for this order
+        if ( ! empty( $used_coupons ) ) {
+            $debug_info[] = sprintf( 
+                'Order #%d has coupons: %s', 
+                $order_id, 
+                implode( ', ', $used_coupons ) 
+            );
+        }
+        
+        foreach ( $used_coupons as $coupon_code ) {
+            if ( strpos( $coupon_code, 'mmb_bundle_' ) === 0 ) {
+                $has_bundle_coupon = true;
+                $debug_info[] = sprintf( 'Order #%d matched bundle coupon: %s', $order_id, $coupon_code );
+                break;
+            }
+        }
+        
+        // If order has bundle coupon, add to results
+        if ( $has_bundle_coupon ) {
+            $order_data[] = (object) array(
+                'ID' => $order_id,
+                'post_date' => $order->post_date,
+                'post_status' => $order->post_status,
+                'coupon_code' => implode( ', ', $used_coupons ),
+                'order_total' => $wc_order->get_total(),
+                'cart_discount' => $wc_order->get_discount_total()
+            );
+        }
+    }
+    
+    // Debug logging
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG && ! empty( $debug_info ) ) {
+        foreach ( $debug_info as $debug_msg ) {
+            mmb_debug_log( $debug_msg );
+        }
+    }
+    
+    $total_orders = count( $order_data );
+    $total_revenue = 0;
+    $total_discount = 0;
+    
+    foreach ( $order_data as $order ) {
+        if ( ! is_object( $order ) ) {
+            continue;
+        }
+        
+        // Add order total to revenue
+        $order_total = isset( $order->order_total ) ? floatval( $order->order_total ) : 0;
+        $cart_discount = isset( $order->cart_discount ) ? floatval( $order->cart_discount ) : 0;
+        
+        $total_revenue += $order_total;
+        $total_discount += $cart_discount;
+    }
+    
+    // Debug logging
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+        mmb_debug_log( sprintf( 
+            'Purchase Analytics: Found %d orders with bundle coupons. Revenue: %s', 
+            $total_orders, 
+            $total_revenue 
+        ) );
+    }
+    
+    return array(
+        'total_orders' => $total_orders,
+        'total_revenue' => $total_revenue,
+        'total_discount' => $total_discount,
+        'orders' => $order_data
+    );
+}
+
+/**
+ * Get date range label for display
+ */
+function mmb_get_date_range_label( $date_range, $start_timestamp, $end_timestamp ) {
+    switch ( $date_range ) {
+        case '7days':
+            return __( 'Last 7 Days', 'mix-match-bundle' );
+        case '30days':
+            return __( 'Last 30 Days', 'mix-match-bundle' );
+        case '90days':
+            return __( 'Last 90 Days', 'mix-match-bundle' );
+        case 'this_month':
+            return __( 'This Month', 'mix-match-bundle' );
+        case 'last_month':
+            return __( 'Last Month', 'mix-match-bundle' );
+        case 'this_quarter':
+            return __( 'This Quarter', 'mix-match-bundle' );
+        case 'last_quarter':
+            return __( 'Last Quarter', 'mix-match-bundle' );
+        case 'this_year':
+            return __( 'This Year', 'mix-match-bundle' );
+        case 'last_year':
+            return __( 'Last Year', 'mix-match-bundle' );
+        case 'custom':
+            return sprintf(
+                    /* translators: 1: start date, 2: end date */
+                    __( 'Custom: %1$s to %2$s', 'mix-match-bundle' ),
+                    gmdate( 'M j, Y', $start_timestamp ),
+                    gmdate( 'M j, Y', $end_timestamp )
+                );
+        default:
+            return __( 'Custom Range', 'mix-match-bundle' );
+    }
+}
+
+/**
+ * Get cart analytics data
+ */
+function mmb_get_cart_analytics( $start_date, $end_date ) {
+    global $wpdb;
+    
+    // Since WooCommerce sessions only contain active carts, we'll track cart analytics 
+    // based on orders (completed carts) and coupon usage as a proxy for cart activity
+    
+    // Get total orders in date range
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- analytics query, no caching needed.
+    $total_orders = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT COUNT(DISTINCT ID) 
+            FROM {$wpdb->posts} 
+            WHERE post_type IN ('shop_order', 'shop_order_placehold')
+            AND post_status IN ('wc-completed', 'wc-processing', 'wc-on-hold', 'wc-pending', 'draft')
+            AND post_date BETWEEN %s AND %s",
+            $start_date . ' 00:00:00',
+            $end_date . ' 23:59:59'
+        )
+    );
+    
+    // Get orders with bundle coupons (orders that used bundles)
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- analytics query, no caching needed.
+    $orders_with_bundles = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT DISTINCT o.ID, o.post_date
+            FROM {$wpdb->posts} o
+            WHERE o.post_type IN ('shop_order', 'shop_order_placehold')
+            AND o.post_status IN ('wc-completed', 'wc-processing', 'wc-on-hold', 'wc-pending', 'draft')
+            AND o.post_date BETWEEN %s AND %s
+            ORDER BY o.post_date DESC",
+            $start_date . ' 00:00:00',
+            $end_date . ' 23:59:59'
+        )
+    );
+    
+    // Initialize counters with safe defaults
+    $total_carts = intval( $total_orders );
+    $carts_with_bundles = 0;
+    $total_cart_value = 0;
+    $bundle_cart_value = 0;
+    
+    // Check each order for bundle coupons
+    if ( is_array( $orders_with_bundles ) ) {
+        foreach ( $orders_with_bundles as $order_data ) {
+            $order = wc_get_order( $order_data->ID );
+            if ( ! $order ) {
+                continue;
+            }
+            
+            $coupons = $order->get_coupon_codes();
+            $has_bundle = false;
+            
+            foreach ( $coupons as $coupon_code ) {
+                if ( strpos( $coupon_code, 'mmb_bundle_' ) === 0 ) {
+                    $has_bundle = true;
+                    break;
+                }
+            }
+            
+            $order_total = floatval( $order->get_total() );
+            $total_cart_value += $order_total;
+            
+            if ( $has_bundle ) {
+                $carts_with_bundles++;
+                $bundle_cart_value += $order_total;
+            }
+        }
+    }
+    
+    // Also check current active sessions for more accurate current cart data
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- active session check, no preparation needed for simple query.
+    $active_sessions = $wpdb->get_results(
+        "SELECT session_key, session_value, session_expiry
+        FROM {$wpdb->prefix}woocommerce_sessions
+        WHERE session_expiry > UNIX_TIMESTAMP()
+        ORDER BY session_expiry DESC
+        LIMIT 100"
+    );
+    
+    $active_carts = 0;
+    $active_bundle_carts = 0;
+    
+    if ( is_array( $active_sessions ) ) {
+        foreach ( $active_sessions as $session ) {
+            if ( ! is_object( $session ) || empty( $session->session_value ) ) {
+                continue;
+            }
+            
+            $session_value = maybe_unserialize( $session->session_value );
+            
+            if ( ! is_array( $session_value ) || ! isset( $session_value['cart'] ) ) {
+                continue;
+            }
+            
+            $cart_contents = maybe_unserialize( $session_value['cart'] );
+            
+            if ( ! empty( $cart_contents ) && is_array( $cart_contents ) ) {
+                $active_carts++;
+                
+                // Check if any cart item has bundle metadata
+                foreach ( $cart_contents as $cart_item ) {
+                    if ( is_array( $cart_item ) && isset( $cart_item['mmb_bundle_id'] ) ) {
+                        $active_bundle_carts++;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Combine historical orders and active carts
+    $total_carts = max( $total_carts, $active_carts );
+    $carts_with_bundles = max( $carts_with_bundles, $active_bundle_carts );
+    
+    return array(
+        'total_carts' => $total_carts,
+        'carts_with_bundles' => $carts_with_bundles,
+        'total_cart_value' => $total_cart_value,
+        'bundle_cart_value' => $bundle_cart_value,
+        'carts' => array() // Placeholder for detailed cart data if needed
+    );
+}
+
+/**
+ * Get checkout analytics data
+ */
+function mmb_get_checkout_analytics( $start_date, $end_date ) {
+    global $wpdb;
+    
+    // Get completed orders with bundle coupons
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- complex join for checkout analytics, no caching needed.
+    $order_data = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT 
+                    o.ID,
+                    o.post_date,
+                    o.post_status,
+                    pm2.meta_value as order_total,
+                    pm.meta_value as coupon_code,
+                    pm3.meta_value as discount_amount,
+                    pm4.meta_value as customer_email
+                FROM {$wpdb->posts} o
+                LEFT JOIN {$wpdb->postmeta} pm ON o.ID = pm.post_id AND pm.meta_key = '_used_coupons'
+                LEFT JOIN {$wpdb->postmeta} pm2 ON o.ID = pm2.post_id AND pm2.meta_key = '_order_total'
+                LEFT JOIN {$wpdb->postmeta} pm3 ON o.ID = pm3.post_id AND pm3.meta_key = '_cart_discount'
+                LEFT JOIN {$wpdb->postmeta} pm4 ON o.ID = pm4.post_id AND pm4.meta_key = '_billing_email'
+                WHERE o.post_type = 'shop_order'
+                AND o.post_status IN ( 'wc-completed', 'wc-processing' )
+                AND pm.meta_value LIKE %s
+                AND o.post_date BETWEEN %s AND %s
+                ORDER BY o.post_date DESC",
+            '%mmb_bundle_%',
+            $start_date,
+            $end_date
+        )
+    );
+    
+    // Ensure $order_data is an array before counting
+    if ( ! is_array( $order_data ) ) {
+        $order_data = array();
+    }
+    
+    $total_orders = count( $order_data );
+    $completed_orders = 0;
+    $total_revenue = 0;
+    $total_discount = 0;
+    $new_customers = 0;
+    $returning_customers = 0;
+    
+    foreach ( $order_data as $order ) {
+        // Skip invalid order data
+        if ( ! is_object( $order ) ) {
+            continue;
+        }
+        
+        $order_total = isset( $order->order_total ) ? floatval( $order->order_total ) : 0;
+        $discount_amount = isset( $order->discount_amount ) ? floatval( $order->discount_amount ) : 0;
+        
+        if ( isset( $order->post_status ) && $order->post_status === 'wc-completed' ) {
+            $completed_orders++;
+            $total_revenue += $order_total;
+            $total_discount += $discount_amount;
+        }
+        
+        // Check if this is customer's first order (if we have customer email)
+        if ( isset( $order->customer_email ) && ! empty( $order->customer_email ) ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- customer order count check, not cached.
+            $customer_orders = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) 
+                    FROM {$wpdb->posts} o
+                    LEFT JOIN {$wpdb->postmeta} pm ON o.ID = pm.post_id AND pm.meta_key = '_billing_email'
+                    WHERE pm.meta_value = %s 
+                    AND o.post_type = 'shop_order' 
+                    AND o.post_status IN ( 'wc-completed', 'wc-processing' )",
+                    $order->customer_email
+                )
+            );
+            
+            if ( $customer_orders == 1 ) {
+                $new_customers++;
+            } else {
+                $returning_customers++;
+            }
+        }
+    }
+    
+    return array(
+        'total_orders' => $total_orders,
+        'completed_orders' => $completed_orders,
+        'total_revenue' => $total_revenue,
+        'total_discount' => $total_discount,
+        'new_customers' => $new_customers,
+        'returning_customers' => $returning_customers,
+        'orders' => $order_data
+    );
+}
+
+/**
+ * Get conversion rate metrics
+ */
+function mmb_get_conversion_analytics( $start_date, $end_date ) {
+    global $wpdb;
+    
+    // Initialize default values
+    $total_views = 0;
+    $unique_visitors = 0;
+    $page_views = array();
+    
+    // Check if statistics table exists (requires WP Statistics plugin or similar)
+    $statistics_table = esc_sql( $wpdb->prefix . 'statistics_pages' );
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence check, minimal performance impact.
+    $table_exists     = $wpdb->get_var(
+        $wpdb->prepare(
+            'SHOW TABLES LIKE %s',
+            $statistics_table
+        )
+    );
+    
+    if ( $table_exists ) {
+        // Get page views for bundle pages
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- statistics table name sanitized via esc_sql() above.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- analytics query, table name sanitized.
+        $page_views = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT 
+                    COUNT(*) as views,
+                    DATE(date) as view_date
+                FROM {$statistics_table}
+                WHERE uri LIKE %s
+                AND date BETWEEN %s AND %s
+                GROUP BY DATE(date)
+                ORDER BY view_date DESC",
+                '%mmb_bundle%',
+                $start_date,
+                $end_date
+            )
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        
+        // Ensure $page_views is an array
+        if ( ! is_array( $page_views ) ) {
+            $page_views = array();
+        }
+        
+        // Get unique visitors
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- statistics table name sanitized via esc_sql() above.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- analytics query, table name sanitized.
+        $unique_visitors = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(DISTINCT ip) 
+                FROM {$statistics_table}
+                WHERE uri LIKE %s
+                AND date BETWEEN %s AND %s",
+                '%mmb_bundle%',
+                $start_date,
+                $end_date
+            )
+        );
+        // phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        
+        // Calculate total views
+        foreach ( $page_views as $view ) {
+            if ( is_object( $view ) && isset( $view->views ) ) {
+                $total_views += intval( $view->views );
+            }
+        }
+    }
+    
+    // Calculate conversion rate
+    $conversion_rate = $total_views > 0 && $unique_visitors > 0 ? round( ( $unique_visitors / $total_views ) * 100, 2 ) : 0;
+    
+    return array(
+        'total_views' => $total_views,
+        'unique_visitors' => intval( $unique_visitors ),
+        'conversion_rate' => $conversion_rate,
+        'page_views' => $page_views,
+        'note' => ! $table_exists ? __( 'Install WP Statistics plugin for detailed analytics', 'mix-match-bundle' ) : ''
+    );
+}
+
+/**
+ * Get bundle performance analytics
+ */
+function mmb_get_bundle_performance_analytics( $start_date, $end_date ) {
+    global $wpdb;
+    
+    // Get bundle data from our custom table
+    $table_name = mmb_get_table_name();
+    // Check if table exists
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- table existence check, minimal performance impact.
+    $table_exists = $wpdb->get_var(
+        $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name )
+    );
+    
+    if ( ! $table_exists ) {
+        return array(
+            'total_bundles' => 0,
+            'used_bundles' => 0,
+            'unused_bundles' => 0,
+            'total_usage' => 0,
+            'average_usage' => 0,
+            'popular_bundles' => array()
+        );
+    }
+    
+    // Get ALL bundles (not filtered by creation date - show usage in selected date range)
+    $bundle_table = esc_sql( $table_name );
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- custom table query, caching handled by calling function.
+    $bundle_data  = $wpdb->get_results(
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- custom table name sanitized above.
+        "SELECT * FROM {$bundle_table} ORDER BY created_at DESC"
+    );
+    
+    // Ensure $bundle_data is an array
+    if ( ! is_array( $bundle_data ) ) {
+        $bundle_data = array();
+    }
+    
+    $total_bundles = count( $bundle_data );
+    $used_bundles = 0;
+    $total_usage = 0;
+    $bundle_usage = array();
+    
+    // For each bundle, count how many times it was used in orders WITHIN THE DATE RANGE
+    foreach ( $bundle_data as $bundle ) {
+        if ( ! is_object( $bundle ) || ! isset( $bundle->id ) ) {
+            continue;
+        }
+        
+        // Count orders that used this bundle's coupon in the selected date range
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- bundle usage count, analytics query.
+        $usage_count = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(DISTINCT o.ID) 
+                FROM {$wpdb->posts} o
+                WHERE o.post_type IN ('shop_order', 'shop_order_placehold')
+                AND o.post_status IN ('wc-completed', 'wc-processing', 'wc-on-hold', 'wc-pending', 'draft')
+                AND o.post_date BETWEEN %s AND %s
+                AND o.ID IN (
+                    SELECT post_id FROM {$wpdb->postmeta}
+                    WHERE meta_key = '_used_coupons'
+                    AND meta_value LIKE %s
+                )",
+                $start_date . ' 00:00:00',
+                $end_date . ' 23:59:59',
+                '%mmb_bundle_' . $bundle->id . '%'
+            )
+        );
+        
+        // Alternative method using WC order objects for more accuracy
+        if ( $usage_count === null || $usage_count === 0 ) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- fallback query for bundle usage, analytics only.
+            $orders_in_range = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT ID FROM {$wpdb->posts}
+                    WHERE post_type IN ('shop_order', 'shop_order_placehold')
+                    AND post_status IN ('wc-completed', 'wc-processing', 'wc-on-hold', 'wc-pending', 'draft')
+                    AND post_date BETWEEN %s AND %s",
+                    $start_date . ' 00:00:00',
+                    $end_date . ' 23:59:59'
+                )
+            );
+            
+            $usage_count = 0;
+            if ( is_array( $orders_in_range ) ) {
+                foreach ( $orders_in_range as $order_data ) {
+                    $order = wc_get_order( $order_data->ID );
+                    if ( ! $order ) {
+                        continue;
+                    }
+                    
+                    $coupons = $order->get_coupon_codes();
+                    foreach ( $coupons as $coupon_code ) {
+                        if ( strpos( $coupon_code, 'mmb_bundle_' . $bundle->id ) !== false ) {
+                            $usage_count++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        $usage_count = intval( $usage_count );
+        $total_usage += $usage_count;
+        
+        if ( $usage_count > 0 ) {
+            $used_bundles++;
+        }
+        
+        // Store bundle usage data
+        $bundle_usage[] = array(
+            'id' => $bundle->id,
+            'name' => isset( $bundle->name ) ? $bundle->name : __( 'Unnamed Bundle', 'mix-match-bundle' ),
+            'usage_count' => $usage_count,
+            'created_at' => isset( $bundle->created_at ) ? $bundle->created_at : ''
+        );
+    }
+    
+    // Sort bundles by usage count (descending)
+    usort( $bundle_usage, function( $a, $b ) {
+        return $b['usage_count'] - $a['usage_count'];
+    });
+    
+    // Get top 10 popular bundles (increased from 5)
+    $popular_bundles = array_slice( $bundle_usage, 0, 10 );
+    
+    return array(
+        'total_bundles' => $total_bundles,
+        'used_bundles' => $used_bundles,
+        'unused_bundles' => $total_bundles - $used_bundles,
+        'total_usage' => $total_usage,
+        'average_usage' => $total_bundles > 0 ? round( $total_usage / $total_bundles, 2 ) : 0,
+        'popular_bundles' => $popular_bundles
+    );
 }
 

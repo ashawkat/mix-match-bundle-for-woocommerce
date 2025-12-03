@@ -40,10 +40,11 @@ This plugin includes translation files for **28 languages** covering European, A
 
 ## Translation Statistics
 
-- **Total Strings**: 67 translatable strings
+- **Total Strings**: 218 translatable strings
 - **File Format**: GNU gettext (.po/.pot)
 - **Text Domain**: `mix-match-bundle`
 - **Domain Path**: `/languages`
+- **Version**: 1.0.2
 
 ## How to Translate
 
