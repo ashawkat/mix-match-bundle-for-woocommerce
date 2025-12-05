@@ -8,7 +8,7 @@ Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 7.0
-WC tested up to: 10.3.6
+WC tested up to: 9.4
 
 Create customizable bundles with tiered discounts, advanced analytics, and reporting. Increase AOV with beautiful bundle builder.
 
@@ -261,6 +261,19 @@ This is a full-featured plugin. We may release additional features based on user
   - Direct link to WooCommerce logs viewer
   - Logging status indicators
 * 🔧 **Diagnostics Page** - Troubleshooting and system info
+
+**BUG FIXES & IMPROVEMENTS**
+* Fixed price calculation issues with product quantities in bundle totals
+* Fixed 500 errors for logged-in users during cart operations
+* Fixed coupon application for non-logged-in users
+* Fixed variable product variations not being added to cart properly
+* Fixed bundle coupon error messages appearing on non-bundle pages
+* Fixed Chart.js loading issues in analytics dashboard
+* Fixed console errors in admin.js when elements don't exist
+* Improved session initialization for all user types
+* Enhanced error handling and logging throughout the plugin
+* Replaced error_log() calls with proper mmb_debug_log() function
+* Improved null checks and element existence validation
   - Database table status checks
   - Required functions verification
   - File permissions checker

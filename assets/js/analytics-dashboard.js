@@ -35,7 +35,22 @@
                 console.error('MMB Analytics Data not found!');
             }
 
-            this.initCharts();
+            // Debug: Check if Chart.js is available
+            console.log('MMB: Chart.js available?', typeof Chart !== 'undefined');
+            if (typeof Chart !== 'undefined') {
+                console.log('MMB: Chart.js version:', Chart.version || 'unknown');
+            }
+
+            // Wait a bit for Chart.js to be fully loaded if needed
+            if (typeof Chart === 'undefined') {
+                // Try again after a short delay
+                setTimeout(() => {
+                    this.initCharts();
+                }, 100);
+            } else {
+                this.initCharts();
+            }
+            
             this.initDateFilters();
             this.initRefreshButton();
             this.initTooltips();
@@ -45,8 +60,25 @@
          * Initialize all charts
          */
         initCharts: function() {
+            // Wait for Chart.js to load if it's not immediately available
             if (typeof Chart === 'undefined') {
-                console.warn('Chart.js not loaded');
+                console.warn('Chart.js not loaded, waiting for it...');
+                
+                // Try to wait for Chart.js to load (in case it's loading asynchronously)
+                let attempts = 0;
+                const maxAttempts = 10;
+                const checkChart = setInterval(() => {
+                    attempts++;
+                    if (typeof Chart !== 'undefined') {
+                        clearInterval(checkChart);
+                        console.log('Chart.js loaded, initializing charts...');
+                        this.initCharts();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(checkChart);
+                        console.error('Chart.js failed to load after multiple attempts. Please check if the file exists at: assets/js/vendor/chart.umd.min.js');
+                    }
+                }, 100);
+                
                 return;
             }
 
@@ -56,12 +88,15 @@
             Chart.defaults.plugins.legend.display = true;
             Chart.defaults.plugins.legend.position = 'bottom';
 
-            // Initialize each chart
+            // Initialize each chart (only if canvas elements exist)
             this.initCouponUsageChart();
             this.initBundleCreationChart();
             this.initRevenueChart();
             this.initCartAnalyticsChart();
-            this.initConversionChart();
+            // Only initialize conversion chart if the canvas exists
+            if (document.getElementById('mmb-conversion-chart')) {
+                this.initConversionChart();
+            }
             this.initBundlePerformanceChart();
         },
 
@@ -71,7 +106,7 @@
         initCouponUsageChart: function() {
             const ctx = document.getElementById('mmb-coupon-chart');
             if (!ctx) {
-                console.warn('Coupon chart canvas not found');
+                // Silently return if canvas doesn't exist
                 return;
             }
 
@@ -141,7 +176,7 @@
         initBundleCreationChart: function() {
             const ctx = document.getElementById('mmb-bundle-chart');
             if (!ctx) {
-                console.warn('Bundle chart canvas not found');
+                // Silently return if canvas doesn't exist
                 return;
             }
 
@@ -212,7 +247,7 @@
         initRevenueChart: function() {
             const ctx = document.getElementById('mmb-revenue-chart');
             if (!ctx) {
-                console.warn('Revenue chart canvas not found');
+                // Silently return if canvas doesn't exist
                 return;
             }
 
@@ -281,7 +316,7 @@
         initCartAnalyticsChart: function() {
             const ctx = document.getElementById('mmb-cart-chart');
             if (!ctx) {
-                console.warn('Cart chart canvas not found');
+                // Silently return if canvas doesn't exist
                 return;
             }
 
@@ -324,7 +359,7 @@
         initConversionChart: function() {
             const ctx = document.getElementById('mmb-conversion-chart');
             if (!ctx) {
-                console.warn('Conversion chart canvas not found');
+                // Silently return if canvas doesn't exist (chart might not be in template)
                 return;
             }
 
@@ -378,7 +413,7 @@
         initBundlePerformanceChart: function() {
             const ctx = document.getElementById('mmb-bundle-performance-chart');
             if (!ctx) {
-                console.warn('Bundle performance chart canvas not found');
+                // Silently return if canvas doesn't exist
                 return;
             }
 

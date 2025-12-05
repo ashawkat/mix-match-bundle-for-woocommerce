@@ -412,9 +412,10 @@
                 return;
             }
             
-            // Calculate totals
+            // Calculate totals - account for quantities
             let subtotal = 0;
             selectedProducts.forEach(product => {
+                // Each product in the array represents one item (quantity is represented by multiple entries)
                 subtotal += parseFloat(product.price || 0);
             });
             
@@ -487,6 +488,9 @@
                     const productPrice = parseFloat(product.price || 0);
                     const quantity = parseInt(product.quantity || 1);
                     
+                    // Calculate item total (price * quantity)
+                    const itemTotal = productPrice * quantity;
+                    
                     let displayName = productName;
                     if (quantity > 1) {
                         displayName += ` × ${quantity}`;
@@ -497,7 +501,7 @@
                     
                     itemDiv.innerHTML = `
                         <span class="mmb-item-name">${displayName}</span>
-                        <span class="mmb-item-price">${this.formatPrice(productPrice)}</span>
+                        <span class="mmb-item-price">${this.formatPrice(itemTotal)}</span>
                     `;
                     
                     fragment.appendChild(itemDiv);
@@ -511,14 +515,31 @@
             // Format and update prices
             const subtotal = parseFloat(data.subtotal || 0);
             const discount = parseFloat(data.discount_amount || 0);
-            const total = parseFloat(data.total_price || 0);
+            let total = parseFloat(data.total_price || 0);
             
-            if (this.subtotalEl) this.subtotalEl.textContent = this.formatPrice(subtotal);
-            if (this.discountEl) this.discountEl.textContent = this.formatPrice(discount);
-            if (this.totalEl) this.totalEl.textContent = this.formatPrice(total);
+            // Ensure totals are valid numbers
+            const validSubtotal = isNaN(subtotal) ? 0 : subtotal;
+            const validDiscount = isNaN(discount) ? 0 : discount;
             
-            if (this.mobileTotal) this.mobileTotal.textContent = this.formatPrice(total);
-            if (this.mobileDiscount) this.mobileDiscount.textContent = this.formatPrice(discount);
+            // If total is 0 or invalid but we have subtotal and discount, calculate it
+            if ((isNaN(total) || total <= 0) && validSubtotal > 0) {
+                total = validSubtotal - validDiscount;
+            }
+            
+            const validTotal = isNaN(total) ? 0 : Math.max(0, total); // Ensure total is never negative
+            
+            if (this.subtotalEl) this.subtotalEl.textContent = this.formatPrice(validSubtotal);
+            if (this.discountEl) this.discountEl.textContent = '-' + this.formatPrice(validDiscount);
+            if (this.totalEl) {
+                this.totalEl.textContent = this.formatPrice(validTotal);
+                // Also update inner text if it's a formatted price element
+                if (this.totalEl.innerHTML) {
+                    this.totalEl.innerHTML = this.formatPrice(validTotal);
+                }
+            }
+            
+            if (this.mobileTotal) this.mobileTotal.textContent = this.formatPrice(validTotal);
+            if (this.mobileDiscount) this.mobileDiscount.textContent = this.formatPrice(validDiscount);
             
             // Enable add to cart button
             if (this.addToCartBtn) this.addToCartBtn.disabled = false;
@@ -643,7 +664,13 @@
             if (this.itemCount) this.itemCount.textContent = '0';
             if (this.subtotalEl) this.subtotalEl.textContent = this.formatPrice(0);
             if (this.discountEl) this.discountEl.textContent = this.formatPrice(0);
-            if (this.totalEl) this.totalEl.textContent = this.formatPrice(0);
+            if (this.totalEl) {
+                this.totalEl.textContent = this.formatPrice(0);
+                // Also update inner text if it's a formatted price element
+                if (this.totalEl.innerHTML) {
+                    this.totalEl.innerHTML = this.formatPrice(0);
+                }
+            }
             
             if (this.addToCartBtn) this.addToCartBtn.disabled = true;
             if (this.mobileAddBtn) this.mobileAddBtn.disabled = true;
@@ -803,7 +830,8 @@
                         ...product,
                         original_price: originalPrice,
                         discounted_price: discountedPrice,
-                        price: discountedPrice // Use discounted price as the main price
+                        price: discountedPrice, // Use discounted price as the main price
+                        quantity: quantity // Ensure quantity is included
                     };
                 });
                 
@@ -859,8 +887,8 @@
             // Group products and combine quantities, preserving discounted prices
             const productMap = {};
             products.forEach(product => {
-            const productId = product.id || product.product_id;
-            const variationId = product.variation_id || 0;
+                const productId = product.id || product.product_id;
+                const variationId = product.variation_id || 0;
                 const key = `${productId}_${variationId}`;
                 
                 // Get discounted price (should already be calculated)
@@ -868,6 +896,7 @@
                 const originalPrice = product.original_price || product.price;
                 
                 if (productMap[key]) {
+                    // Increment quantity for existing product
                     productMap[key].quantity += (product.quantity || 1);
                 } else {
                     productMap[key] = {

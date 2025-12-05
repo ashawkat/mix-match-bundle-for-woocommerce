@@ -193,11 +193,11 @@ if ( ! defined( 'ABSPATH' ) ) {
                     </div>
                     <div class="mmb-price-row mmb-total">
                         <span><?php echo esc_html__( 'Total', 'mix-match-bundle' ); ?></span>
-                        <span class="mmb-price" id="bundle-summary-total"><?php echo wp_kses_post( wc_price( 0 ) ); ?></span>
+                        <span class="mmb-price" id="mmb-total"><?php echo wp_kses_post( wc_price( 0 ) ); ?></span>
                     </div>
                 </div>
                 
-                <button id="mmb-add-to-cart" class="button button-primary mmb-add-to-cart" disabled data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>" aria-describedby="bundle-summary-total">
+                <button id="mmb-add-to-cart" class="button button-primary mmb-add-to-cart" disabled data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>" aria-describedby="mmb-total">
                     <?php echo esc_html( $bundle['button_text'] ?: __( 'Add Bundle to Cart', 'mix-match-bundle' ) ); ?>
                 </button>
             </div>

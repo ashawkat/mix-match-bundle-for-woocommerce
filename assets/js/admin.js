@@ -39,11 +39,14 @@
             this.loadBundles();
             this.initSweetAlert();
             
-            // Load products on initial page load
-            this.searchProducts('');
+            // Only load products and setup tiers if we're on the bundle management page
+            if (this.elements.productSearch && this.elements.productsList) {
+                // Load products on initial page load
+                this.searchProducts('');
+            }
             
-            // Add default tier if none exist
-            if (this.elements.tiersContainer.querySelectorAll('.mmb-tier-input').length === 0) {
+            // Add default tier if none exist (only if tiers container exists)
+            if (this.elements.tiersContainer && this.elements.tiersContainer.querySelectorAll('.mmb-tier-input').length === 0) {
                 this.addTierInput(2, 10);
             }
             
@@ -95,28 +98,41 @@
          * Bind event listeners
          */
         bindEvents() {
+            // Only bind events if elements exist (not all admin pages have the bundle form)
+            if (!this.elements.form) {
+                return; // Exit early if form doesn't exist (e.g., on analytics page)
+            }
+            
             // Form submit
-            this.elements.form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveBundle();
-            });
+            if (this.elements.form) {
+                this.elements.form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.saveBundle();
+                });
+            }
             
             // Add tier button
-            this.elements.addTierBtn.addEventListener('click', () => {
-                this.addTierInput();
-            });
+            if (this.elements.addTierBtn) {
+                this.elements.addTierBtn.addEventListener('click', () => {
+                    this.addTierInput();
+                });
+            }
             
             // Remove tier (delegated)
-            this.elements.tiersContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('mmb-remove-tier')) {
-                    e.target.closest('.mmb-tier-input').remove();
-                }
-            });
+            if (this.elements.tiersContainer) {
+                this.elements.tiersContainer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('mmb-remove-tier')) {
+                        e.target.closest('.mmb-tier-input').remove();
+                    }
+                });
+            }
             
             // Reset button
-            this.elements.resetBtn.addEventListener('click', () => {
-                this.resetForm();
-            });
+            if (this.elements.resetBtn) {
+                this.elements.resetBtn.addEventListener('click', () => {
+                    this.resetForm();
+                });
+            }
             
             // Toggle max quantity field visibility
             const useQuantityCheckbox = document.getElementById('bundle_use_quantity');
@@ -128,20 +144,24 @@
             }
             
             // Product search with debounce
-            let searchTimeout;
-            this.elements.productSearch.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.searchProducts(e.target.value);
-                }, 300);
-            });
+            if (this.elements.productSearch) {
+                let searchTimeout;
+                this.elements.productSearch.addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        this.searchProducts(e.target.value);
+                    }, 300);
+                });
+            }
             
             // Product selection (delegated)
-            this.elements.productsList.addEventListener('change', (e) => {
-                if (e.target.type === 'checkbox') {
-                    this.updateSelectedProducts(e.target);
-                }
-            });
+            if (this.elements.productsList) {
+                this.elements.productsList.addEventListener('change', (e) => {
+                    if (e.target.type === 'checkbox') {
+                        this.updateSelectedProducts(e.target);
+                    }
+                });
+            }
             
             // Selected products drag and drop (delegated) - only if element exists
             if (this.elements.selectedProductsList) {
@@ -184,20 +204,22 @@
             }
             
             // Bundle actions (delegated)
-            this.elements.bundlesContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('mmb-edit-bundle')) {
-                    const bundleId = e.target.dataset.bundleId;
-                    this.editBundle(bundleId);
-                } else if (e.target.classList.contains('mmb-delete-bundle')) {
-                    const bundleId = e.target.dataset.bundleId;
-                    this.confirmDeleteBundle(bundleId);
-                } else if (e.target.classList.contains('mmb-copy-shortcode')) {
-                    e.preventDefault();
-                    this.copyShortcode(e.target);
-                } else if (e.target.classList.contains('mmb-shortcode-input')) {
-                    e.target.select();
-                }
-            });
+            if (this.elements.bundlesContainer) {
+                this.elements.bundlesContainer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('mmb-edit-bundle')) {
+                        const bundleId = e.target.dataset.bundleId;
+                        this.editBundle(bundleId);
+                    } else if (e.target.classList.contains('mmb-delete-bundle')) {
+                        const bundleId = e.target.dataset.bundleId;
+                        this.confirmDeleteBundle(bundleId);
+                    } else if (e.target.classList.contains('mmb-copy-shortcode')) {
+                        e.preventDefault();
+                        this.copyShortcode(e.target);
+                    } else if (e.target.classList.contains('mmb-shortcode-input')) {
+                        e.target.select();
+                    }
+                });
+            }
         },
         
         /**
@@ -471,13 +493,18 @@
          * Load all bundles
          */
         async loadBundles() {
+            // Only load bundles if bundles container exists
+            if (!this.elements.bundlesContainer) {
+                return;
+            }
+            
             try {
                 const response = await this.ajax({
                     action: 'mmb_get_bundles',
                     nonce: mmb_admin.nonce
                 });
                 
-                    if (response.success) {
+                if (response.success) {
                     this.renderBundles(response.data);
                 }
             } catch (error) {
@@ -489,6 +516,11 @@
          * Render bundles list
          */
         renderBundles(bundles) {
+            // Only render if bundles container exists
+            if (!this.elements.bundlesContainer) {
+                return;
+            }
+            
             let html = '<div class="mmb-bundles-table-header"><div class="mmb-bundle-col">Name</div><div class="mmb-bundle-col">Products</div><div class="mmb-bundle-col">Tiers</div><div class="mmb-bundle-col">Status</div><div class="mmb-bundle-col">Shortcode</div><div class="mmb-bundle-col">Actions</div></div>';
             
             if (bundles.length === 0) {
@@ -519,7 +551,9 @@
                 });
             }
             
-            this.elements.bundlesContainer.innerHTML = html;
+            if (this.elements.bundlesContainer) {
+                this.elements.bundlesContainer.innerHTML = html;
+            }
         },
         
         /**
@@ -865,6 +899,11 @@
          * Search products
          */
         async searchProducts(searchTerm) {
+            // Only search if products list element exists
+            if (!this.elements.productsList) {
+                return;
+            }
+            
             try {
                 console.log('Searching products with term:', searchTerm);
                 const response = await this.ajax({
@@ -875,7 +914,7 @@
                 
                 console.log('Search response:', response);
                 
-                    if (response.success) {
+                if (response.success) {
                     console.log('Products found:', response.data.length);
                     
                     // Merge new products into cache instead of replacing
@@ -906,6 +945,11 @@
          * Render products list
          */
         renderProducts(products) {
+            // Only render if products list element exists
+            if (!this.elements.productsList) {
+                return;
+            }
+            
             let html = '';
             
             products.map((product) => this.normalizeProduct(product)).forEach((product) => {

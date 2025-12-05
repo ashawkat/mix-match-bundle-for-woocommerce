@@ -31,15 +31,20 @@ class MMB_Cart {
         // Ensure session is available for AJAX requests
         add_action( 'woocommerce_init', [ $this, 'ensure_session' ], 5 );
         
+        // Clean up invalid bundle coupons and notices early - before WooCommerce displays notices
+        add_action( 'template_redirect', [ $this, 'cleanup_invalid_bundle_coupons' ], 5 );
+        add_action( 'wp_loaded', [ $this, 'cleanup_invalid_bundle_coupons' ], 5 );
+        
         // Allow our dynamic coupon to be applied - hook into multiple validation points
         add_filter( 'woocommerce_coupon_is_valid', [ $this, 'validate_bundle_coupon' ], 10, 3 );
         add_filter( 'woocommerce_coupon_error', [ $this, 'suppress_bundle_coupon_error' ], 10, 3 );
         add_filter( 'woocommerce_coupon_is_valid_for_cart', [ $this, 'validate_bundle_coupon_for_cart' ], 10, 2 );
         
-        // Remove error notices for bundle coupons
+        // Remove error notices for bundle coupons - run early to prevent display
         add_action( 'woocommerce_before_checkout_process', [ $this, 'remove_bundle_coupon_notices' ], 5 );
         add_action( 'woocommerce_after_calculate_totals', [ $this, 'remove_bundle_coupon_notices' ], 5 );
         add_action( 'woocommerce_applied_coupon', [ $this, 'remove_bundle_coupon_notices' ], 5 );
+        add_action( 'woocommerce_cart_loaded_from_session', [ $this, 'remove_bundle_coupon_notices' ], 5 );
         
         // Ensure block-based mini cart gets updated totals with coupon discount
         add_filter( 'woocommerce_add_to_cart_fragments', [ $this, 'update_block_mini_cart_fragments' ], 20, 1 );
@@ -524,6 +529,45 @@ class MMB_Cart {
     }
     
     /**
+     * Clean up invalid bundle coupons and remove error notices
+     * This runs early to prevent notices from being displayed
+     */
+    public function cleanup_invalid_bundle_coupons() {
+        if ( ! function_exists( 'WC' ) || ! WC()->cart || ! WC()->session ) {
+            return;
+        }
+        
+        // Check if there are any bundle items in cart
+        $has_bundle_items = false;
+        foreach ( WC()->cart->get_cart() as $item ) {
+            if ( ! empty( $item['mmb_bundle_item'] ) ) {
+                $has_bundle_items = true;
+                break;
+            }
+        }
+        
+        // Get bundle session data
+        $session_data = WC()->session->get( 'mmb_bundle_discount' );
+        $coupon_code = null;
+        
+        if ( $session_data && isset( $session_data['coupon_code'] ) ) {
+            $coupon_code = $session_data['coupon_code'];
+        }
+        
+        // If no bundle items but coupon exists, remove it
+        if ( ! $has_bundle_items && $coupon_code ) {
+            if ( WC()->cart->has_discount( $coupon_code ) ) {
+                WC()->cart->remove_coupon( $coupon_code );
+            }
+            // Clear session data
+            WC()->session->set( 'mmb_bundle_discount', null );
+        }
+        
+        // Always remove bundle coupon error notices
+        $this->remove_bundle_coupon_notices();
+    }
+    
+    /**
      * Remove bundle coupon error notices
      */
     public function remove_bundle_coupon_notices() {
@@ -532,31 +576,75 @@ class MMB_Cart {
                 return;
             }
             
-            // Get all error notices from session
-            $notices = WC()->session->get( 'wc_notices', [] );
-            if ( empty( $notices ) || ! isset( $notices['error'] ) || ! is_array( $notices['error'] ) ) {
+            // Get all notices from session (error, success, notice, info)
+            $all_notices = WC()->session->get( 'wc_notices', [] );
+            if ( empty( $all_notices ) || ! is_array( $all_notices ) ) {
                 return;
             }
             
-            // Filter out notices that mention our bundle coupon prefix
-            $filtered_notices = [];
-            foreach ( $notices['error'] as $notice ) {
-                $notice_text = '';
-                if ( is_array( $notice ) && isset( $notice['notice'] ) ) {
-                    $notice_text = $notice['notice'];
-                } elseif ( is_string( $notice ) ) {
-                    $notice_text = $notice;
+            $notices_updated = false;
+            
+            // Process each notice type
+            foreach ( [ 'error', 'success', 'notice', 'info' ] as $notice_type ) {
+                if ( ! isset( $all_notices[ $notice_type ] ) || ! is_array( $all_notices[ $notice_type ] ) ) {
+                    continue;
                 }
                 
-                // Keep notices that don't mention our bundle coupon prefix
-                if ( empty( $notice_text ) || strpos( $notice_text, $this->coupon_code_prefix ) === false ) {
-                    $filtered_notices[] = $notice;
+                $filtered_notices = [];
+                foreach ( $all_notices[ $notice_type ] as $notice ) {
+                    $notice_text = '';
+                    
+                    // Extract notice text from different formats
+                    if ( is_array( $notice ) ) {
+                        if ( isset( $notice['notice'] ) ) {
+                            $notice_text = $notice['notice'];
+                        } elseif ( isset( $notice['message'] ) ) {
+                            $notice_text = $notice['message'];
+                        }
+                    } elseif ( is_string( $notice ) ) {
+                        $notice_text = $notice;
+                    }
+                    
+                    // Check if this notice mentions our bundle coupon prefix
+                    $is_bundle_coupon_notice = false;
+                    if ( ! empty( $notice_text ) ) {
+                        // Check for bundle coupon code pattern
+                        if ( strpos( $notice_text, $this->coupon_code_prefix ) !== false ) {
+                            $is_bundle_coupon_notice = true;
+                        }
+                        // Also check for common coupon error messages that might reference our coupons
+                        if ( stripos( $notice_text, 'coupon' ) !== false && 
+                             ( stripos( $notice_text, 'invalid' ) !== false || 
+                               stripos( $notice_text, 'not applicable' ) !== false ||
+                               stripos( $notice_text, 'removed' ) !== false ) ) {
+                            // Check if any bundle coupon is in the cart
+                            if ( WC()->cart ) {
+                                $applied_coupons = WC()->cart->get_applied_coupons();
+                                foreach ( $applied_coupons as $applied_coupon ) {
+                                    if ( strpos( $applied_coupon, $this->coupon_code_prefix ) === 0 ) {
+                                        $is_bundle_coupon_notice = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Keep notices that are not about bundle coupons
+                    if ( ! $is_bundle_coupon_notice ) {
+                        $filtered_notices[] = $notice;
+                    } else {
+                        $notices_updated = true;
+                    }
                 }
+                
+                $all_notices[ $notice_type ] = $filtered_notices;
             }
             
-            // Update session with filtered notices
-            $notices['error'] = $filtered_notices;
-            WC()->session->set( 'wc_notices', $notices );
+            // Update session with filtered notices if any were removed
+            if ( $notices_updated ) {
+                WC()->session->set( 'wc_notices', $all_notices );
+            }
         } catch ( Exception $e ) {
             // Silently fail - don't break cart functionality
             mmb_debug_log( 'MMB Notice Removal Error: ' . $e->getMessage(), 'error' );
