@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="mmb-bundle-content">
         <div class="mmb-products-section">
             <?php if ( ! empty( $bundle['show_heading_text'] ) ) : ?>
-                <h3><?php echo esc_html( $bundle['heading_text'] ?: __( 'Select Your Products Below', 'mix-match-bundle' ) ); ?></h3>
+                <h3><?php echo esc_html( $bundle['heading_text'] ?: __( 'Select Your Products Below', 'bt-bundle-builder-for-wc' ) ); ?></h3>
             <?php endif; ?>
             <?php if ( ! empty( $bundle['show_hint_text'] ) && ! empty( $bundle['hint_text'] ) ) : ?>
                 <p class="mmb-bundle-hint"><?php echo esc_html( $bundle['hint_text'] ); ?></p>
@@ -38,7 +38,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             <!-- Savings Progress Section - Mobile Only (before products) -->
             <div class="mmb-discount-tiers-simple mmb-mobile-only-tiers" data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>">
                 <?php if ( ! empty( $bundle['show_progress_text'] ) ) : ?>
-                    <h3><?php echo esc_html( $bundle['progress_text'] ?: __( 'Your Savings Progress', 'mix-match-bundle' ) ); ?></h3>
+                    <h3><?php echo esc_html( $bundle['progress_text'] ?: __( 'Your Savings Progress', 'bt-bundle-builder-for-wc' ) ); ?></h3>
                 <?php endif; ?>
                 <div class="mmb-tiers-list">
                     <?php foreach ( $bundle['discount_tiers'] as $index => $tier ) : ?>
@@ -50,10 +50,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <span class="mmb-tier-text">
                                     <?php 
                                     /* translators: 1: quantity, 2: discount percentage */
-                                    echo esc_html( sprintf( __( 'Buy %1$d items', 'mix-match-bundle' ), intval( $tier['quantity'] ) ) ); 
+                                    echo esc_html( sprintf( __( 'Buy %1$d items', 'bt-bundle-builder-for-wc' ), intval( $tier['quantity'] ) ) ); 
                                     ?>
                                 </span>
-                                <span class="mmb-tier-discount"><?php echo floatval( $tier['discount'] ); ?>% <?php echo esc_html__( 'OFF', 'mix-match-bundle' ); ?></span>
+                                <span class="mmb-tier-discount"><?php echo floatval( $tier['discount'] ); ?>% <?php echo esc_html__( 'OFF', 'bt-bundle-builder-for-wc' ); ?></span>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -94,9 +94,9 @@ if ( ! defined( 'ABSPATH' ) ) {
                             
                             <?php if ( $is_variable ) : ?>
                                 <div class="mmb-variation-select">
-                                    <label for="mmb-variation-<?php echo intval( $product->get_id() ); ?>" class="mmb-variation-label"><?php echo esc_html__( 'Select an option', 'mix-match-bundle' ); ?></label>
+                                    <label for="mmb-variation-<?php echo intval( $product->get_id() ); ?>" class="mmb-variation-label"><?php echo esc_html__( 'Select an option', 'bt-bundle-builder-for-wc' ); ?></label>
                                     <select class="mmb-variation-dropdown" id="mmb-variation-<?php echo intval( $product->get_id() ); ?>" data-product-id="<?php echo intval( $product->get_id() ); ?>">
-                                        <option value=""><?php echo esc_html__( 'Select an option', 'mix-match-bundle' ); ?></option>
+                                        <option value=""><?php echo esc_html__( 'Select an option', 'bt-bundle-builder-for-wc' ); ?></option>
                                         <?php foreach ( $variations as $variation ) : 
                                             $variation_obj = wc_get_product( $variation['variation_id'] );
                                             if ( ! $variation_obj || ! $variation_obj->is_in_stock() ) continue;
@@ -123,14 +123,14 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 $max_quantity = isset( $bundle['max_quantity'] ) ? intval( $bundle['max_quantity'] ) : 10;
                             ?>
                                 <div class="mmb-product-quantity">
-                                    <div class="mmb-quantity-controls" role="group" aria-label="<?php echo esc_attr__( 'Product quantity controls', 'mix-match-bundle' ); ?>">
-                                        <button type="button" class="mmb-qty-btn mmb-qty-minus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Decrease quantity', 'mix-match-bundle' ); ?>" tabindex="0">
+                                    <div class="mmb-quantity-controls" role="group" aria-label="<?php echo esc_attr__( 'Product quantity controls', 'bt-bundle-builder-for-wc' ); ?>">
+                                        <button type="button" class="mmb-qty-btn mmb-qty-minus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Decrease quantity', 'bt-bundle-builder-for-wc' ); ?>" tabindex="0">
                                             <span>−</span>
                                         </button>
                                         <input type="number" min="0" max="<?php echo esc_attr( $max_quantity ); ?>" value="0" class="mmb-product-qty-input" 
                                                data-product-id="<?php echo intval( $product->get_id() ); ?>"
-                                               <?php echo $is_variable ? 'disabled' : ''; ?> readonly aria-label="<?php echo esc_attr__( 'Quantity', 'mix-match-bundle' ); ?>" tabindex="0">
-                                        <button type="button" class="mmb-qty-btn mmb-qty-plus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Increase quantity', 'mix-match-bundle' ); ?>" tabindex="0">
+                                               <?php echo $is_variable ? 'disabled' : ''; ?> readonly aria-label="<?php echo esc_attr__( 'Quantity', 'bt-bundle-builder-for-wc' ); ?>" tabindex="0">
+                                        <button type="button" class="mmb-qty-btn mmb-qty-plus" data-product-id="<?php echo intval( $product->get_id() ); ?>" <?php echo $is_variable ? 'disabled' : ''; ?> aria-label="<?php echo esc_attr__( 'Increase quantity', 'bt-bundle-builder-for-wc' ); ?>" tabindex="0">
                                             <span>+</span>
                                         </button>
                                     </div>
@@ -140,7 +140,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     <input type="checkbox" value="<?php echo intval( $product->get_id() ); ?>" 
                                            class="mmb-product-select"
                                            <?php echo $is_variable ? 'disabled' : ''; ?>>
-                                    <span><?php echo esc_html__( 'Select', 'mix-match-bundle' ); ?></span>
+                                    <span><?php echo esc_html__( 'Select', 'bt-bundle-builder-for-wc' ); ?></span>
                                 </label>
                             <?php endif; ?>
                         </div>
@@ -153,7 +153,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             <!-- Simplified Discount Tiers -->
             <div class="mmb-discount-tiers-simple" data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>">
                 <?php if ( ! empty( $bundle['show_progress_text'] ) ) : ?>
-                    <h3><?php echo esc_html( $bundle['progress_text'] ?: __( 'Your Savings Progress', 'mix-match-bundle' ) ); ?></h3>
+                    <h3><?php echo esc_html( $bundle['progress_text'] ?: __( 'Your Savings Progress', 'bt-bundle-builder-for-wc' ) ); ?></h3>
                 <?php endif; ?>
                 <div class="mmb-tiers-list">
                     <?php foreach ( $bundle['discount_tiers'] as $index => $tier ) : ?>
@@ -165,10 +165,10 @@ if ( ! defined( 'ABSPATH' ) ) {
                                 <span class="mmb-tier-text">
                                     <?php 
                                     /* translators: 1: quantity, 2: discount percentage */
-                                    echo esc_html( sprintf( __( 'Buy %1$d items', 'mix-match-bundle' ), intval( $tier['quantity'] ) ) ); 
+                                    echo esc_html( sprintf( __( 'Buy %1$d items', 'bt-bundle-builder-for-wc' ), intval( $tier['quantity'] ) ) ); 
                                     ?>
                                 </span>
-                                <span class="mmb-tier-discount"><?php echo floatval( $tier['discount'] ); ?>% <?php echo esc_html__( 'OFF', 'mix-match-bundle' ); ?></span>
+                                <span class="mmb-tier-discount"><?php echo floatval( $tier['discount'] ); ?>% <?php echo esc_html__( 'OFF', 'bt-bundle-builder-for-wc' ); ?></span>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -176,29 +176,29 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
             
             <div class="mmb-bundle-summary" role="region" aria-labelledby="bundle-summary-title">
-                <h3 id="bundle-summary-title"><?php echo esc_html__( 'My Bundle', 'mix-match-bundle' ); ?> <span class="mmb-item-count">0 / 10</span></h3>
+                <h3 id="bundle-summary-title"><?php echo esc_html__( 'My Bundle', 'bt-bundle-builder-for-wc' ); ?> <span class="mmb-item-count">0 / 10</span></h3>
                 
                 <div id="mmb-bundle-items" class="mmb-selected-items">
-                    <p class="mmb-empty-state"><?php echo esc_html__( 'Select products to get started', 'mix-match-bundle' ); ?></p>
+                    <p class="mmb-empty-state"><?php echo esc_html__( 'Select products to get started', 'bt-bundle-builder-for-wc' ); ?></p>
                 </div>
                 
                 <div class="mmb-price-breakdown">
                     <div class="mmb-price-row">
-                        <span><?php echo esc_html__( 'Subtotal', 'mix-match-bundle' ); ?></span>
+                        <span><?php echo esc_html__( 'Subtotal', 'bt-bundle-builder-for-wc' ); ?></span>
                         <span class="mmb-price" id="mmb-subtotal">$0.00</span>
                     </div>
                     <div class="mmb-price-row">
-                        <span><?php echo esc_html__( 'Discount', 'mix-match-bundle' ); ?></span>
+                        <span><?php echo esc_html__( 'Discount', 'bt-bundle-builder-for-wc' ); ?></span>
                         <span class="mmb-discount" id="mmb-discount">-$0.00</span>
                     </div>
                     <div class="mmb-price-row mmb-total">
-                        <span><?php echo esc_html__( 'Total', 'mix-match-bundle' ); ?></span>
+                        <span><?php echo esc_html__( 'Total', 'bt-bundle-builder-for-wc' ); ?></span>
                         <span class="mmb-price" id="mmb-total"><?php echo wp_kses_post( wc_price( 0 ) ); ?></span>
                     </div>
                 </div>
                 
                 <button id="mmb-add-to-cart" class="button button-primary mmb-add-to-cart" disabled data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>" aria-describedby="mmb-total">
-                    <?php echo esc_html( $bundle['button_text'] ?: __( 'Add Bundle to Cart', 'mix-match-bundle' ) ); ?>
+                    <?php echo esc_html( $bundle['button_text'] ?: __( 'Add Bundle to Cart', 'bt-bundle-builder-for-wc' ) ); ?>
                 </button>
             </div>
         </div>
@@ -217,17 +217,17 @@ if ( ! defined( 'ABSPATH' ) ) {
                     $tier_qty = intval( $first_tier['quantity'] );
                     $tier_discount = floatval( $first_tier['discount'] );
                     /* translators: 1: quantity required, 2: pluralized label, 3: discount percentage */
-                    $first_tier_text = __( 'Add %1$d %2$s to get %3$s%% OFF', 'mix-match-bundle' );
+                    $first_tier_text = __( 'Add %1$d %2$s to get %3$s%% OFF', 'bt-bundle-builder-for-wc' );
                     echo esc_html(
                         sprintf(
                             $first_tier_text,
                             $tier_qty,
-                            _n( 'item', 'items', $tier_qty, 'mix-match-bundle' ),
+                            _n( 'item', 'items', $tier_qty, 'bt-bundle-builder-for-wc' ),
                             $tier_discount
                         )
                     );
                 } else {
-                    echo esc_html__( 'Select items to see your discount', 'mix-match-bundle' );
+                    echo esc_html__( 'Select items to see your discount', 'bt-bundle-builder-for-wc' );
                 }
                 ?>
             </span>
@@ -236,16 +236,16 @@ if ( ! defined( 'ABSPATH' ) ) {
         <div class="mmb-mobile-cart-content">
             <div class="mmb-mobile-cart-info">
                 <div class="mmb-mobile-cart-details">
-                    <span class="mmb-mobile-sticky-items">0 <?php echo esc_html__( 'items', 'mix-match-bundle' ); ?></span>
+                    <span class="mmb-mobile-sticky-items">0 <?php echo esc_html__( 'items', 'bt-bundle-builder-for-wc' ); ?></span>
                     <span class="mmb-mobile-sticky-total">$0.00</span>
                 </div>
                 <div class="mmb-mobile-cart-discount">
-                    <span class="mmb-mobile-discount-text"><?php echo esc_html__( 'Save', 'mix-match-bundle' ); ?>: </span>
+                    <span class="mmb-mobile-discount-text"><?php echo esc_html__( 'Save', 'bt-bundle-builder-for-wc' ); ?>: </span>
                     <span class="mmb-mobile-discount-amount" id="mmb-mobile-discount">$0.00</span>
                 </div>
             </div>
             <button class="mmb-mobile-add-to-cart" id="mmb-mobile-add-cart" disabled data-primary-color="<?php echo esc_attr( $bundle['primary_color'] ); ?>">
-                <?php echo esc_html( $bundle['button_text'] ?: __( 'Add to Cart', 'mix-match-bundle' ) ); ?>
+                <?php echo esc_html( $bundle['button_text'] ?: __( 'Add to Cart', 'bt-bundle-builder-for-wc' ) ); ?>
             </button>
         </div>
     </div>

@@ -2,7 +2,7 @@
 # This file is distributed under the GPL-2.0+.
 msgid ""
 msgstr ""
-"Project-Id-Version: Mix & Match Bundle for WooCommerce 1.0.1\n"
+"Project-Id-Version: Bundle Builder for WooCommerce 1.0.1\n"
 "Report-Msgid-Bugs-To: https://betatech.co/support\n"
 "POT-Creation-Date: 2024-01-01 00:00:00+00:00\n"
 "MIME-Version: 1.0\n"
@@ -11,29 +11,29 @@ msgstr ""
 "PO-Revision-Date: 2024-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
-"X-Generator: Mix & Match Bundle Translation Generator\n"
+"X-Generator: Bundle Builder Translation Generator\n"
 
-#: mix-match-bundle.php:46
-msgid "Mix & Match Bundle for WooCommerce"
+#: bt-bundle-builder-for-wc.php:46
+msgid "Bundle Builder for WooCommerce"
 msgstr ""
 
-#: mix-match-bundle.php:47
+#: bt-bundle-builder-for-wc.php:47
 msgid "requires WooCommerce to be installed and active."
 msgstr ""
 
-#: mix-match-bundle.php:49
+#: bt-bundle-builder-for-wc.php:49
 msgid "Install WooCommerce"
 msgstr ""
 
-#: mix-match-bundle.php:80
+#: bt-bundle-builder-for-wc.php:80
 msgid "Settings"
 msgstr ""
 
-#: mix-match-bundle.php:87
+#: bt-bundle-builder-for-wc.php:87
 msgid "Mix & Match Bundles"
 msgstr ""
 
-#: mix-match-bundle.php:88
+#: bt-bundle-builder-for-wc.php:88
 msgid "Mix & Match"
 msgstr ""
 
@@ -269,7 +269,7 @@ msgstr ""
 #, php-format
 msgid "Bundle Discount (%s%% off)"
 msgstr ""
-#: includes/class-cart.php:86 mix-match-bundle.php:316
+#: includes/class-cart.php:86 bt-bundle-builder-for-wc.php:316
 msgid "Bundle Discount"
 msgstr ""
 

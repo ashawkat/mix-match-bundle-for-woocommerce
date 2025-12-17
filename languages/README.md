@@ -42,7 +42,7 @@ This plugin includes translation files for **28 languages** covering European, A
 
 - **Total Strings**: 218 translatable strings
 - **File Format**: GNU gettext (.po/.pot)
-- **Text Domain**: `mix-match-bundle`
+- **Text Domain**: `bt-bundle-builder-for-wc`
 - **Domain Path**: `/languages`
 - **Version**: 1.0.2
 
@@ -51,7 +51,7 @@ This plugin includes translation files for **28 languages** covering European, A
 ### Method 1: Using Poedit (Recommended)
 
 1. **Download Poedit**: https://poedit.net/
-2. **Open a PO file**: `mix-match-bundle-{locale}.po`
+2. **Open a PO file**: `bt-bundle-builder-for-wc-{locale}.po`
 3. **Translate each string** in the msgstr field
 4. **Save the file** - Poedit will automatically generate the .mo file
 5. **Upload both files** (.po and .mo) to your WordPress site's plugin languages folder
@@ -74,12 +74,12 @@ This plugin includes translation files for **28 languages** covering European, A
 
 ### Method 4: Manual Translation
 
-1. **Open** `mix-match-bundle-{locale}.po` in any text editor
+1. **Open** `bt-bundle-builder-for-wc-{locale}.po` in any text editor
 2. **Find** each `msgid` line (source English text)
 3. **Add translation** in the `msgstr ""` line below it
 4. **Generate .mo file** using msgfmt:
    ```bash
-   msgfmt mix-match-bundle-{locale}.po -o mix-match-bundle-{locale}.mo
+   msgfmt bt-bundle-builder-for-wc-{locale}.po -o bt-bundle-builder-for-wc-{locale}.mo
    ```
 5. **Upload both files** to your site
 
@@ -87,11 +87,11 @@ This plugin includes translation files for **28 languages** covering European, A
 
 ```
 languages/
-├── mix-match-bundle.pot          # Template file (source)
-├── mix-match-bundle-fr_FR.po     # French translations
-├── mix-match-bundle-fr_FR.mo     # Compiled French (generated)
-├── mix-match-bundle-de_DE.po     # German translations
-├── mix-match-bundle-de_DE.mo     # Compiled German (generated)
+├── bt-bundle-builder-for-wc.pot          # Template file (source)
+├── bt-bundle-builder-for-wc-fr_FR.po     # French translations
+├── bt-bundle-builder-for-wc-fr_FR.mo     # Compiled French (generated)
+├── bt-bundle-builder-for-wc-de_DE.po     # German translations
+├── bt-bundle-builder-for-wc-de_DE.mo     # Compiled German (generated)
 └── ... (other languages)
 ```
 
@@ -166,7 +166,7 @@ Need professional translation? Consider:
 For translation issues or questions:
 - **Email**: support@betatech.co
 - **Website**: https://betatech.co
-- **Documentation**: https://betatech.co/docs/mix-match-bundle
+- **Documentation**: https://betatech.co/docs/bundle-builder
 
 ---
 

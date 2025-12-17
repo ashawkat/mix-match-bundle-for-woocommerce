@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Check if user has required permissions
 if ( ! current_user_can( 'manage_options' ) ) {
-    wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'mix-match-bundle' ) );
+    wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'bt-bundle-builder-for-wc' ) );
 }
 
 // Get diagnostic information

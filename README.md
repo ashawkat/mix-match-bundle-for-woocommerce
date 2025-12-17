@@ -1,4 +1,4 @@
-# 🎁 Mix & Match Bundle for WooCommerce
+# 🎁 Bundle Builder for WooCommerce
 
 [![Version](https://img.shields.io/badge/Version-1.0.2-blue.svg)](https://github.com/betatech/mix-match-bundle/releases)
 [![WordPress Plugin Version](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)](https://wordpress.org/)
@@ -9,7 +9,7 @@
 
 > **Create customizable product bundles with tiered quantity discounts, advanced analytics, and comprehensive reporting. Increase AOV with a beautiful bundle builder and real-time discount calculations.**
 
-![Mix & Match Bundle](https://demo.betatech.co/wp-content/uploads/2025/11/Banner-1.jpg)
+![Bundle Builder](https://demo.betatech.co/wp-content/uploads/2025/11/Banner-1.jpg)
 
 ---
 
@@ -109,9 +109,9 @@
 
 1. Log into your WordPress admin panel
 2. Navigate to **Plugins** → **Add New**
-3. Search for "Mix & Match Bundle"
+3. Search for "Bundle Builder"
 4. Click **Install Now** → **Activate**
-5. Go to **Mix & Match** in the admin menu
+5. Go to **Bundle Builder** in the admin menu
 
 ### From GitHub
 
@@ -134,7 +134,7 @@ Then activate from WordPress admin → Plugins.
 
 ### Quick Start (5 Minutes)
 
-1. **Navigate** to **Mix & Match** in WordPress admin
+1. **Navigate** to **Bundle Builder** in WordPress admin
 2. **Create** a new bundle or edit inline
 3. **Name** your bundle (e.g., "Build Your Box")
 4. **Select Products** - Search and choose products to include
@@ -289,7 +289,7 @@ The plugin includes pre-configured translation files for:
 
 1. Install Loco Translate from WordPress
 2. Go to **Loco Translate** → **Plugins**
-3. Select **Mix & Match Bundle**
+3. Select **Bundle Builder**
 4. Translate online
 
 #### Translation Files
@@ -302,7 +302,7 @@ languages/
 └── ... (26 more languages)
 ```
 
-**Text Domain:** `mix-match-bundle`
+**Text Domain:** `bt-bundle-builder-for-wc`
 
 **Total Strings:** 67
 
@@ -344,7 +344,7 @@ mix-match-bundle/
 │   └── README.md                   # Translation guide
 ├── templates/
 │   └── bundle-display.php          # Frontend template
-├── mix-match-bundle.php            # Main plugin file
+├── bt-bundle-builder-for-wc.php    # Main plugin file
 ├── readme.txt                      # WordPress.org readme
 ├── README.md                       # GitHub readme (this file)
 ├── uninstall.php                   # Cleanup on uninstall
@@ -544,7 +544,7 @@ We welcome contributions from the community!
 This plugin is licensed under the GPLv2 or later.
 
 ```
-Mix & Match Bundle for WooCommerce
+Bundle Builder for WooCommerce
 Copyright (C) 2024 Betatech
 
 This program is free software; you can redistribute it and/or modify

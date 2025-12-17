@@ -232,11 +232,11 @@ class MMB_Cart {
             // Debug logging
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 $logger = wc_get_logger();
-                $logger->debug( 'MMB: Coupon created successfully - Code: ' . $coupon_code, array( 'source' => 'mix-match-bundle' ) );
-                $logger->debug( 'MMB: Coupon details - Type: ' . $coupon->get_discount_type(), array( 'source' => 'mix-match-bundle' ) );
-                $logger->debug( 'MMB: Coupon amount: ' . $coupon->get_amount(), array( 'source' => 'mix-match-bundle' ) );
-                $logger->debug( 'MMB: Coupon usage limit: ' . $coupon->get_usage_limit(), array( 'source' => 'mix-match-bundle' ) );
-                $logger->debug( 'MMB: Coupon product restriction: ' . json_encode( $coupon->get_product_ids() ), array( 'source' => 'mix-match-bundle' ) );
+                $logger->debug( 'MMB: Coupon created successfully - Code: ' . $coupon_code, array( 'source' => 'bt-bundle-builder-for-wc' ) );
+                $logger->debug( 'MMB: Coupon details - Type: ' . $coupon->get_discount_type(), array( 'source' => 'bt-bundle-builder-for-wc' ) );
+                $logger->debug( 'MMB: Coupon amount: ' . $coupon->get_amount(), array( 'source' => 'bt-bundle-builder-for-wc' ) );
+                $logger->debug( 'MMB: Coupon usage limit: ' . $coupon->get_usage_limit(), array( 'source' => 'bt-bundle-builder-for-wc' ) );
+                $logger->debug( 'MMB: Coupon product restriction: ' . json_encode( $coupon->get_product_ids() ), array( 'source' => 'bt-bundle-builder-for-wc' ) );
             }
             
             // Clear coupon cache to ensure it's immediately available
@@ -252,7 +252,7 @@ class MMB_Cart {
             // Log error for debugging
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 $logger = wc_get_logger();
-                $logger->error( 'MMB Coupon Creation Error: ' . $e->getMessage(), array( 'source' => 'mix-match-bundle' ) );
+                $logger->error( 'MMB Coupon Creation Error: ' . $e->getMessage(), array( 'source' => 'bt-bundle-builder-for-wc' ) );
             }
             
             // Return empty string to indicate failure

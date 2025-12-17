@@ -37,18 +37,18 @@ class MMB_Frontend {
         ?>
         <div class="mmb-discount-tiers">
             <div class="mmb-tier-header">
-                <span class="mmb-tier-qty"><?php echo esc_html__( 'Quantity', 'mix-match-bundle' ); ?></span>
-                <span class="mmb-tier-discount"><?php echo esc_html__( 'Discount', 'mix-match-bundle' ); ?></span>
+                <span class="mmb-tier-qty"><?php echo esc_html__( 'Quantity', 'bt-bundle-builder-for-wc' ); ?></span>
+                <span class="mmb-tier-discount"><?php echo esc_html__( 'Discount', 'bt-bundle-builder-for-wc' ); ?></span>
             </div>
             <?php foreach ( $tiers as $tier ) : ?>
                 <div class="mmb-tier-row">
                     <span class="mmb-tier-qty"><?php 
                         /* translators: %d: number of items */
-                        echo esc_html( sprintf( __( '%d+ items', 'mix-match-bundle' ), intval( $tier['quantity'] ) ) ); 
+                        echo esc_html( sprintf( __( '%d+ items', 'bt-bundle-builder-for-wc' ), intval( $tier['quantity'] ) ) ); 
                     ?></span>
                     <span class="mmb-tier-discount"><?php 
                         /* translators: %s: discount percentage */
-                        echo esc_html( sprintf( __( '%s%% off', 'mix-match-bundle' ), floatval( $tier['discount'] ) ) ); 
+                        echo esc_html( sprintf( __( '%s%% off', 'bt-bundle-builder-for-wc' ), floatval( $tier['discount'] ) ) ); 
                     ?></span>
                 </div>
             <?php endforeach; ?>

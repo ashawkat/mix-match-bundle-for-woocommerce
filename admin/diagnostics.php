@@ -1,6 +1,6 @@
 <?php
 /**
- * Mix & Match Bundle Diagnostics Page
+ * Bundle Builder Diagnostics Page
  * System diagnostics and troubleshooting
  */
 
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Check if user has required permissions
 if ( ! current_user_can( 'manage_options' ) ) {
-    wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'mix-match-bundle' ) );
+    wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'bt-bundle-builder-for-wc' ) );
 }
 
 // Run diagnostics
@@ -89,35 +89,35 @@ $sessions_table_exists = $sessions_cache;
 ?>
 
 <div class="wrap">
-    <h1><?php echo esc_html__( 'Mix & Match Bundle Diagnostics', 'mix-match-bundle' ); ?></h1>
+    <h1><?php echo esc_html__( 'Bundle Builder Diagnostics', 'bt-bundle-builder-for-wc' ); ?></h1>
     
     <div class="notice notice-info">
-        <p><?php echo esc_html__( 'This page helps diagnose issues with the Mix & Match Bundle plugin and analytics system.', 'mix-match-bundle' ); ?></p>
+        <p><?php echo esc_html__( 'This page helps diagnose issues with the Bundle Builder plugin and analytics system.', 'bt-bundle-builder-for-wc' ); ?></p>
     </div>
 
     <div class="card" style="max-width: 100%; margin-top: 20px;">
-        <h2><?php echo esc_html__( 'System Information', 'mix-match-bundle' ); ?></h2>
+        <h2><?php echo esc_html__( 'System Information', 'bt-bundle-builder-for-wc' ); ?></h2>
         <table class="widefat striped">
             <tbody>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Plugin Version', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Plugin Version', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( MMB_VERSION ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'WordPress Version', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'WordPress Version', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( get_bloginfo( 'version' ) ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'PHP Version', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'PHP Version', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( phpversion() ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'WooCommerce Status', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'WooCommerce Status', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td>
                         <?php if ( $wc_active ) : ?>
-                            <span style="color: green;">✓ <?php echo esc_html__( 'Active', 'mix-match-bundle' ); ?> (<?php echo esc_html( $wc_version ); ?>)</span>
+                            <span style="color: green;">✓ <?php echo esc_html__( 'Active', 'bt-bundle-builder-for-wc' ); ?> (<?php echo esc_html( $wc_version ); ?>)</span>
                         <?php else : ?>
-                            <span style="color: red;">✗ <?php echo esc_html__( 'Not Active', 'mix-match-bundle' ); ?></span>
+                            <span style="color: red;">✗ <?php echo esc_html__( 'Not Active', 'bt-bundle-builder-for-wc' ); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -126,26 +126,26 @@ $sessions_table_exists = $sessions_cache;
     </div>
 
     <div class="card" style="max-width: 100%; margin-top: 20px;">
-        <h2><?php echo esc_html__( 'Database Status', 'mix-match-bundle' ); ?></h2>
+        <h2><?php echo esc_html__( 'Database Status', 'bt-bundle-builder-for-wc' ); ?></h2>
         <table class="widefat striped">
             <tbody>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Bundle Table', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Bundle Table', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td>
                         <?php if ( $table_exists ) : ?>
                             <span style="color: green;">✓ <?php echo esc_html( $table_name ); ?></span>
                         <?php else : ?>
-                            <span style="color: red;">✗ <?php echo esc_html__( 'Table not found', 'mix-match-bundle' ); ?></span>
+                            <span style="color: red;">✗ <?php echo esc_html__( 'Table not found', 'bt-bundle-builder-for-wc' ); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'WooCommerce Sessions Table', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'WooCommerce Sessions Table', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td>
                         <?php if ( $sessions_table_exists ) : ?>
                             <span style="color: green;">✓ <?php echo esc_html( $wpdb->prefix . 'woocommerce_sessions' ); ?></span>
                         <?php else : ?>
-                            <span style="color: orange;">⚠ <?php echo esc_html__( 'Table not found (cart analytics may be limited)', 'mix-match-bundle' ); ?></span>
+                            <span style="color: orange;">⚠ <?php echo esc_html__( 'Table not found (cart analytics may be limited)', 'bt-bundle-builder-for-wc' ); ?></span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -159,7 +159,7 @@ $sessions_table_exists = $sessions_cache;
                     }
                 ?>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Total Bundles', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Total Bundles', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( $bundle_count ); ?></td>
                 </tr>
                 <?php endif; ?>
@@ -168,11 +168,11 @@ $sessions_table_exists = $sessions_cache;
     </div>
 
     <div class="card" style="max-width: 100%; margin-top: 20px;">
-        <h2><?php echo esc_html__( 'Required Functions', 'mix-match-bundle' ); ?></h2>
+        <h2><?php echo esc_html__( 'Required Functions', 'bt-bundle-builder-for-wc' ); ?></h2>
         <?php if ( empty( $missing_functions ) ) : ?>
-            <p style="color: green;">✓ <?php echo esc_html__( 'All required functions are available', 'mix-match-bundle' ); ?></p>
+            <p style="color: green;">✓ <?php echo esc_html__( 'All required functions are available', 'bt-bundle-builder-for-wc' ); ?></p>
         <?php else : ?>
-            <p style="color: red;">✗ <?php echo esc_html__( 'Missing functions:', 'mix-match-bundle' ); ?></p>
+            <p style="color: red;">✗ <?php echo esc_html__( 'Missing functions:', 'bt-bundle-builder-for-wc' ); ?></p>
             <ul>
                 <?php foreach ( $missing_functions as $function ) : ?>
                     <li><code><?php echo esc_html( $function ); ?></code></li>
@@ -182,39 +182,39 @@ $sessions_table_exists = $sessions_cache;
     </div>
 
     <div class="card" style="max-width: 100%; margin-top: 20px;">
-        <h2><?php echo esc_html__( 'Analytics Data Sample', 'mix-match-bundle' ); ?></h2>
+        <h2><?php echo esc_html__( 'Analytics Data Sample', 'bt-bundle-builder-for-wc' ); ?></h2>
         <table class="widefat striped">
             <tbody>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Total Coupons Created', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Total Coupons Created', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( $analytics_data['coupon_analytics']['total_created'] ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Coupons Used', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Coupons Used', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( $analytics_data['coupon_analytics']['total_used'] ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Coupons Unused', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Coupons Unused', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( $analytics_data['coupon_analytics']['total_unused'] ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Total Bundles', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Total Bundles', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( $analytics_data['bundle_analytics']['total_bundles'] ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Total Orders', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Total Orders', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( $analytics_data['purchase_analytics']['total_orders'] ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Total Revenue', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Total Revenue', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo wp_kses_post( wc_price( $analytics_data['purchase_analytics']['total_revenue'] ) ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Total Carts', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Total Carts', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( $analytics_data['cart_analytics']['total_carts'] ); ?></td>
                 </tr>
                 <tr>
-                    <td><strong><?php echo esc_html__( 'Carts with Bundles', 'mix-match-bundle' ); ?></strong></td>
+                    <td><strong><?php echo esc_html__( 'Carts with Bundles', 'bt-bundle-builder-for-wc' ); ?></strong></td>
                     <td><?php echo esc_html( $analytics_data['cart_analytics']['carts_with_bundles'] ); ?></td>
                 </tr>
             </tbody>
@@ -222,14 +222,14 @@ $sessions_table_exists = $sessions_cache;
     </div>
 
     <div class="card" style="max-width: 100%; margin-top: 20px;">
-        <h2><?php echo esc_html__( 'Debug Information', 'mix-match-bundle' ); ?></h2>
-        <p><?php echo esc_html__( 'Copy this information when reporting issues:', 'mix-match-bundle' ); ?></p>
+        <h2><?php echo esc_html__( 'Debug Information', 'bt-bundle-builder-for-wc' ); ?></h2>
+        <p><?php echo esc_html__( 'Copy this information when reporting issues:', 'bt-bundle-builder-for-wc' ); ?></p>
         <textarea readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px;"><?php echo esc_textarea( $debug_output ); ?></textarea>
     </div>
 
     <p style="margin-top: 20px;">
         <a href="<?php echo esc_url( admin_url( 'admin.php?page=mmb-analytics' ) ); ?>" class="button button-primary">
-            <?php echo esc_html__( '← Back to Analytics', 'mix-match-bundle' ); ?>
+            <?php echo esc_html__( '← Back to Analytics', 'bt-bundle-builder-for-wc' ); ?>
         </a>
     </p>
 </div>

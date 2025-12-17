@@ -18,7 +18,7 @@ class MMB_Shortcode {
         $bundle = $bundle_manager->get_bundle( intval( $atts['id'] ) );
         
         if ( ! $bundle ) {
-            return '<p>' . esc_html__( 'Bundle not found.', 'mix-match-bundle' ) . '</p>';
+            return '<p>' . esc_html__( 'Bundle not found.', 'bt-bundle-builder-for-wc' ) . '</p>';
         }
         
         return MMB_Frontend::render_bundle( $bundle );

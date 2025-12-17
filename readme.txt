@@ -1,4 +1,4 @@
-=== Mix & Match Bundle for WooCommerce ===
+=== Bundle Builder for WooCommerce ===
 Contributors: betatech, adnanshawkat
 Tags: woocommerce, bundles, discounts, tiered pricing, analytics
 Requires at least: 6.0
@@ -16,7 +16,7 @@ Create customizable bundles with tiered discounts, advanced analytics, and repor
 
 **⚠️ IMPORTANT: This plugin requires WooCommerce to be installed and active.**
 
-**Mix & Match Bundle for WooCommerce** empowers you to create highly customizable product bundles with intelligent tiered discount promotions. Boost your average order value (AOV) by incentivizing customers to purchase more items with attractive quantity-based discounts.
+**Bundle Builder for WooCommerce** empowers you to create highly customizable product bundles with intelligent tiered discount promotions. Boost your average order value (AOV) by incentivizing customers to purchase more items with attractive quantity-based discounts.
 
 Perfect for WooCommerce stores looking to increase sales through bundle deals, volume discounts, and mix-and-match promotions!
 
@@ -81,7 +81,7 @@ The plugin includes translation files for 28 languages:
 
 = 🚀 How It Works =
 
-1. **Create Bundle** - Navigate to Mix & Match in WordPress admin
+1. **Create Bundle** - Navigate to Bundle Builder in WordPress admin
 2. **Select Products** - Choose which products customers can bundle
 3. **Reorder Products** - NEW! Drag and drop products to control display order on frontend
 4. **Set Discount Tiers** - Configure quantity-based discounts (e.g., 2 items = 10% off, 3 items = 15% off)
@@ -130,9 +130,9 @@ The plugin includes translation files for 28 languages:
 
 1. Log into your WordPress admin panel
 2. Go to **Plugins** > **Add New**
-3. Search for "Mix & Match Bundle"
+3. Search for "Bundle Builder"
 4. Click **Install Now** and then **Activate**
-5. Navigate to **Mix & Match** in the admin menu
+5. Navigate to **Bundle Builder** in the admin menu
 6. Create your first bundle!
 
 = Manual Installation =
@@ -146,7 +146,7 @@ The plugin includes translation files for 28 languages:
 
 = After Activation =
 
-1. Go to **Mix & Match** in your WordPress admin menu
+1. Go to **Bundle Builder** in your WordPress admin menu
 2. Click **Add New Bundle** or create one inline
 3. Enter bundle name and description
 4. Search and select products to include
@@ -161,7 +161,7 @@ The plugin includes translation files for 28 languages:
 
 = Does this plugin require WooCommerce? =
 
-Yes! This plugin is an extension for WooCommerce and will not work without it. WooCommerce must be installed and active before you can use Mix & Match Bundle. If you try to activate the plugin without WooCommerce, you'll see an error message with a link to install WooCommerce.
+Yes! This plugin is an extension for WooCommerce and will not work without it. WooCommerce must be installed and active before you can use Bundle Builder. If you try to activate the plugin without WooCommerce, you'll see an error message with a link to install WooCommerce.
 
 = Does this work with variable products? =
 
@@ -337,13 +337,13 @@ Important update! New analytics dashboard with comprehensive reporting, settings
 Sidecart integration improvements and bug fixes.
 
 = 1.0.0 =
-Initial release of Mix & Match Bundle for WooCommerce. Create beautiful product bundles with tiered discounts today!
+Initial release of Bundle Builder for WooCommerce. Create beautiful product bundles with tiered discounts today!
 
 == Support ==
 
 = Need Help? =
 
-* **Documentation:** Visit [https://betatech.co/docs/mix-match-bundle](https://betatech.co/docs/mix-match-bundle)
+* **Documentation:** Visit [https://betatech.co/docs/bundle-builder](https://betatech.co/docs/bundle-builder)
 * **Support Forum:** [https://betatech.co/support](https://betatech.co/support)
 * **Email:** support@betatech.co
 * **Response Time:** Within 24-48 hours on business days
@@ -355,12 +355,12 @@ We love hearing from our users! If you have ideas for new features, please share
 = Report Bugs =
 
 Found a bug? Please report it via:
-* **GitHub Issues:** [https://github.com/betatech/mix-match-bundle](https://github.com/betatech/mix-match-bundle)
+* **GitHub Issues:** [https://github.com/betatech/bt-bundle-builder-for-wc](https://github.com/betatech/bt-bundle-builder-for-wc)
 * **Support Forum:** [https://betatech.co/support](https://betatech.co/support)
 
 == Privacy Policy ==
 
-Mix & Match Bundle for WooCommerce does not:
+Bundle Builder for WooCommerce does not:
 * Track users
 * Collect personal data
 * Use cookies
@@ -372,7 +372,7 @@ All bundle and product data is stored locally in your WordPress database.
 == Contributing ==
 
 We welcome contributions! The plugin is developed on GitHub:
-**Repository:** [https://github.com/betatech/mix-match-bundle](https://github.com/betatech/mix-match-bundle)
+**Repository:** [https://github.com/betatech/bt-bundle-builder-for-wc](https://github.com/betatech/bt-bundle-builder-for-wc)
 
 = How to Contribute =
 * Submit bug reports and feature requests on GitHub Issues

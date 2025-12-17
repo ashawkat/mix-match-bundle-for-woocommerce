@@ -1,6 +1,6 @@
 <?php
 /**
- * Mix & Match Bundle Analytics Dashboard
+ * Bundle Builder Analytics Dashboard
  * Modern, responsive analytics interface
  */
 
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Check if user has required permissions
 if ( ! current_user_can( 'manage_options' ) ) {
-    wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'mix-match-bundle' ) );
+    wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'bt-bundle-builder-for-wc' ) );
 }
 
 // Note: Analytics assets are enqueued in main plugin file via enqueue_admin_scripts hook
@@ -73,16 +73,16 @@ for ( $i = 6; $i >= 0; $i-- ) {
 
 // Prepare data for JavaScript
 $chart_data = array(
-    'couponLabels' => array( __( 'Used', 'mix-match-bundle' ), __( 'Unused', 'mix-match-bundle' ) ),
+    'couponLabels' => array( __( 'Used', 'bt-bundle-builder-for-wc' ), __( 'Unused', 'bt-bundle-builder-for-wc' ) ),
     'couponData' => array(
         intval( $analytics_data['coupon_analytics']['total_used'] ),
         intval( $analytics_data['coupon_analytics']['total_unused'] )
     ),
-    'bundleLabels' => ! empty( $bundle_timeline ) ? $bundle_timeline : array( __( 'No data', 'mix-match-bundle' ) ),
+    'bundleLabels' => ! empty( $bundle_timeline ) ? $bundle_timeline : array( __( 'No data', 'bt-bundle-builder-for-wc' ) ),
     'bundleData' => ! empty( $bundle_counts ) ? $bundle_counts : array( 0 ),
     'revenueLabels' => $revenue_timeline,
     'revenueData' => $revenue_amounts,
-    'cartLabels' => array( __( 'Total Carts', 'mix-match-bundle' ), __( 'With Bundles', 'mix-match-bundle' ) ),
+    'cartLabels' => array( __( 'Total Carts', 'bt-bundle-builder-for-wc' ), __( 'With Bundles', 'bt-bundle-builder-for-wc' ) ),
     'cartData' => array(
         intval( $analytics_data['cart_analytics']['total_carts'] ),
         intval( $analytics_data['cart_analytics']['carts_with_bundles'] )
@@ -91,7 +91,7 @@ $chart_data = array(
     'conversionData' => $conversion_rates,
     'bundlePerformanceLabels' => ! empty( $analytics_data['bundle_performance']['popular_bundles'] ) 
         ? array_column( array_slice( $analytics_data['bundle_performance']['popular_bundles'], 0, 5 ), 'name' )
-        : array( __( 'No bundles', 'mix-match-bundle' ) ),
+        : array( __( 'No bundles', 'bt-bundle-builder-for-wc' ) ),
     'bundlePerformanceData' => ! empty( $analytics_data['bundle_performance']['popular_bundles'] )
         ? array_column( array_slice( $analytics_data['bundle_performance']['popular_bundles'], 0, 5 ), 'usage_count' )
         : array( 0 )
@@ -109,7 +109,7 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
     <!-- Header -->
     <div class="mmb-analytics-header">
         <h1 class="mmb-analytics-title">
-            <?php echo esc_html__( 'Mix & Match Bundle Analytics', 'mix-match-bundle' ); ?>
+            <?php echo esc_html__( 'Bundle Builder Analytics', 'bt-bundle-builder-for-wc' ); ?>
         </h1>
     </div>
 
@@ -117,26 +117,26 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
     <div class="mmb-date-filters">
         <input type="hidden" id="mmb-analytics-nonce" value="<?php echo esc_attr( wp_create_nonce( 'mmb_analytics_filter' ) ); ?>">
         <div class="mmb-filter-group">
-            <label for="mmb-date-range"><?php echo esc_html__( 'Date Range', 'mix-match-bundle' ); ?></label>
+            <label for="mmb-date-range"><?php echo esc_html__( 'Date Range', 'bt-bundle-builder-for-wc' ); ?></label>
             <select id="mmb-date-range" name="date_range">
-                <option value="7days" <?php selected( $date_range, '7days' ); ?>><?php echo esc_html__( 'Last 7 Days', 'mix-match-bundle' ); ?></option>
-                <option value="30days" <?php selected( $date_range, '30days' ); ?>><?php echo esc_html__( 'Last 30 Days', 'mix-match-bundle' ); ?></option>
-                <option value="90days" <?php selected( $date_range, '90days' ); ?>><?php echo esc_html__( 'Last 90 Days', 'mix-match-bundle' ); ?></option>
-                <option value="this_month" <?php selected( $date_range, 'this_month' ); ?>><?php echo esc_html__( 'This Month', 'mix-match-bundle' ); ?></option>
-                <option value="last_month" <?php selected( $date_range, 'last_month' ); ?>><?php echo esc_html__( 'Last Month', 'mix-match-bundle' ); ?></option>
-                <option value="this_quarter" <?php selected( $date_range, 'this_quarter' ); ?>><?php echo esc_html__( 'This Quarter', 'mix-match-bundle' ); ?></option>
-                <option value="this_year" <?php selected( $date_range, 'this_year' ); ?>><?php echo esc_html__( 'This Year', 'mix-match-bundle' ); ?></option>
-                <option value="custom" <?php selected( $date_range, 'custom' ); ?>><?php echo esc_html__( 'Custom Range', 'mix-match-bundle' ); ?></option>
+                <option value="7days" <?php selected( $date_range, '7days' ); ?>><?php echo esc_html__( 'Last 7 Days', 'bt-bundle-builder-for-wc' ); ?></option>
+                <option value="30days" <?php selected( $date_range, '30days' ); ?>><?php echo esc_html__( 'Last 30 Days', 'bt-bundle-builder-for-wc' ); ?></option>
+                <option value="90days" <?php selected( $date_range, '90days' ); ?>><?php echo esc_html__( 'Last 90 Days', 'bt-bundle-builder-for-wc' ); ?></option>
+                <option value="this_month" <?php selected( $date_range, 'this_month' ); ?>><?php echo esc_html__( 'This Month', 'bt-bundle-builder-for-wc' ); ?></option>
+                <option value="last_month" <?php selected( $date_range, 'last_month' ); ?>><?php echo esc_html__( 'Last Month', 'bt-bundle-builder-for-wc' ); ?></option>
+                <option value="this_quarter" <?php selected( $date_range, 'this_quarter' ); ?>><?php echo esc_html__( 'This Quarter', 'bt-bundle-builder-for-wc' ); ?></option>
+                <option value="this_year" <?php selected( $date_range, 'this_year' ); ?>><?php echo esc_html__( 'This Year', 'bt-bundle-builder-for-wc' ); ?></option>
+                <option value="custom" <?php selected( $date_range, 'custom' ); ?>><?php echo esc_html__( 'Custom Range', 'bt-bundle-builder-for-wc' ); ?></option>
             </select>
         </div>
 
         <div id="mmb-custom-dates" style="display: <?php echo $date_range === 'custom' ? 'flex' : 'none'; ?>; gap: 16px;">
             <div class="mmb-filter-group">
-                <label for="mmb-start-date"><?php echo esc_html__( 'Start Date', 'mix-match-bundle' ); ?></label>
+                <label for="mmb-start-date"><?php echo esc_html__( 'Start Date', 'bt-bundle-builder-for-wc' ); ?></label>
                 <input type="date" id="mmb-start-date" name="start_date" value="<?php echo esc_attr( $start_date ); ?>">
             </div>
             <div class="mmb-filter-group">
-                <label for="mmb-end-date"><?php echo esc_html__( 'End Date', 'mix-match-bundle' ); ?></label>
+                <label for="mmb-end-date"><?php echo esc_html__( 'End Date', 'bt-bundle-builder-for-wc' ); ?></label>
                 <input type="date" id="mmb-end-date" name="end_date" value="<?php echo esc_attr( $end_date ); ?>">
             </div>
         </div>
@@ -144,11 +144,11 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
         <div class="mmb-filter-actions">
             <button type="button" id="mmb-apply-filter" class="mmb-btn mmb-btn-primary">
                 <span class="dashicons dashicons-filter"></span>
-                <?php echo esc_html__( 'Apply Filter', 'mix-match-bundle' ); ?>
+                <?php echo esc_html__( 'Apply Filter', 'bt-bundle-builder-for-wc' ); ?>
             </button>
             <button type="button" class="mmb-btn mmb-btn-secondary mmb-refresh-data">
                 <span class="dashicons dashicons-update"></span>
-                <?php echo esc_html__( 'Refresh', 'mix-match-bundle' ); ?>
+                <?php echo esc_html__( 'Refresh', 'bt-bundle-builder-for-wc' ); ?>
             </button>
         </div>
     </div>
@@ -163,11 +163,11 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
                     <span class="dashicons dashicons-tickets-alt"></span>
                 </div>
             </div>
-            <div class="mmb-stat-label"><?php echo esc_html__( 'Total Coupons', 'mix-match-bundle' ); ?></div>
+            <div class="mmb-stat-label"><?php echo esc_html__( 'Total Coupons', 'bt-bundle-builder-for-wc' ); ?></div>
             <div class="mmb-stat-value"><?php echo esc_html( number_format( $analytics_data['coupon_analytics']['total_created'] ) ); ?></div>
             <div class="mmb-stat-change <?php echo $analytics_data['coupon_analytics']['usage_rate'] > 50 ? 'positive' : 'neutral'; ?>">
                 <span class="dashicons dashicons-arrow-<?php echo $analytics_data['coupon_analytics']['usage_rate'] > 50 ? 'up' : 'right'; ?>-alt"></span>
-                <?php echo esc_html( $analytics_data['coupon_analytics']['usage_rate'] ); ?>% <?php echo esc_html__( 'usage rate', 'mix-match-bundle' ); ?>
+                <?php echo esc_html( $analytics_data['coupon_analytics']['usage_rate'] ); ?>% <?php echo esc_html__( 'usage rate', 'bt-bundle-builder-for-wc' ); ?>
             </div>
         </div>
 
@@ -178,11 +178,11 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
                     <span class="dashicons dashicons-products"></span>
                 </div>
             </div>
-            <div class="mmb-stat-label"><?php echo esc_html__( 'Total Bundles', 'mix-match-bundle' ); ?></div>
+            <div class="mmb-stat-label"><?php echo esc_html__( 'Total Bundles', 'bt-bundle-builder-for-wc' ); ?></div>
             <div class="mmb-stat-value"><?php echo esc_html( number_format( $analytics_data['bundle_analytics']['total_bundles'] ) ); ?></div>
             <div class="mmb-stat-change positive">
                 <span class="dashicons dashicons-arrow-up-alt"></span>
-                <?php echo esc_html( $analytics_data['bundle_analytics']['enabled_bundles'] ); ?> <?php echo esc_html__( 'active', 'mix-match-bundle' ); ?>
+                <?php echo esc_html( $analytics_data['bundle_analytics']['enabled_bundles'] ); ?> <?php echo esc_html__( 'active', 'bt-bundle-builder-for-wc' ); ?>
             </div>
         </div>
 
@@ -193,7 +193,7 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
                     <span class="dashicons dashicons-chart-line"></span>
                 </div>
             </div>
-            <div class="mmb-stat-label"><?php echo esc_html__( 'Total Revenue', 'mix-match-bundle' ); ?></div>
+            <div class="mmb-stat-label"><?php echo esc_html__( 'Total Revenue', 'bt-bundle-builder-for-wc' ); ?></div>
             <div class="mmb-stat-value">
                 <?php 
                 $revenue = $analytics_data['purchase_analytics']['total_revenue'];
@@ -202,7 +202,7 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
             </div>
             <div class="mmb-stat-change <?php echo $analytics_data['purchase_analytics']['total_orders'] > 0 ? 'positive' : 'neutral'; ?>">
                 <span class="dashicons dashicons-arrow-<?php echo $analytics_data['purchase_analytics']['total_orders'] > 0 ? 'up' : 'right'; ?>-alt"></span>
-                <?php echo esc_html( $analytics_data['purchase_analytics']['total_orders'] ); ?> <?php echo esc_html__( 'orders', 'mix-match-bundle' ); ?>
+                <?php echo esc_html( $analytics_data['purchase_analytics']['total_orders'] ); ?> <?php echo esc_html__( 'orders', 'bt-bundle-builder-for-wc' ); ?>
             </div>
         </div>
 
@@ -213,7 +213,7 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
                     <span class="dashicons dashicons-performance"></span>
                 </div>
             </div>
-            <div class="mmb-stat-label"><?php echo esc_html__( 'Bundle Order Rate', 'mix-match-bundle' ); ?></div>
+            <div class="mmb-stat-label"><?php echo esc_html__( 'Bundle Order Rate', 'bt-bundle-builder-for-wc' ); ?></div>
             <div class="mmb-stat-value">
                 <?php 
                 // Calculate: (Orders with bundles / Total coupons created) × 100
@@ -228,7 +228,7 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
             </div>
             <div class="mmb-stat-change <?php echo $bundle_order_rate > 30 ? 'positive' : ( $bundle_order_rate > 0 ? 'neutral' : 'neutral' ); ?>">
                 <span class="dashicons dashicons-arrow-<?php echo $bundle_order_rate > 30 ? 'up' : 'right'; ?>-alt"></span>
-                <?php echo esc_html( $orders_with_bundles ); ?> <?php echo esc_html__( 'orders', 'mix-match-bundle' ); ?>
+                <?php echo esc_html( $orders_with_bundles ); ?> <?php echo esc_html__( 'orders', 'bt-bundle-builder-for-wc' ); ?>
             </div>
         </div>
 
@@ -241,8 +241,8 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
         <div class="mmb-chart-card">
             <div class="mmb-chart-header">
                 <div>
-                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Coupon Usage', 'mix-match-bundle' ); ?></h3>
-                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Used vs Unused Coupons', 'mix-match-bundle' ); ?></p>
+                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Coupon Usage', 'bt-bundle-builder-for-wc' ); ?></h3>
+                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Used vs Unused Coupons', 'bt-bundle-builder-for-wc' ); ?></p>
                 </div>
             </div>
             <div class="mmb-chart-container">
@@ -254,8 +254,8 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
         <div class="mmb-chart-card">
             <div class="mmb-chart-header">
                 <div>
-                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Bundle Creation', 'mix-match-bundle' ); ?></h3>
-                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Bundles created over time', 'mix-match-bundle' ); ?></p>
+                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Bundle Creation', 'bt-bundle-builder-for-wc' ); ?></h3>
+                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Bundles created over time', 'bt-bundle-builder-for-wc' ); ?></p>
                 </div>
             </div>
             <div class="mmb-chart-container">
@@ -267,8 +267,8 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
         <div class="mmb-chart-card full-width">
             <div class="mmb-chart-header">
                 <div>
-                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Revenue Over Time', 'mix-match-bundle' ); ?></h3>
-                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Weekly revenue breakdown', 'mix-match-bundle' ); ?></p>
+                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Revenue Over Time', 'bt-bundle-builder-for-wc' ); ?></h3>
+                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Weekly revenue breakdown', 'bt-bundle-builder-for-wc' ); ?></p>
                 </div>
             </div>
             <div class="mmb-chart-container large">
@@ -280,8 +280,8 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
         <div class="mmb-chart-card">
             <div class="mmb-chart-header">
                 <div>
-                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Cart Analytics', 'mix-match-bundle' ); ?></h3>
-                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Carts with bundle items', 'mix-match-bundle' ); ?></p>
+                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Cart Analytics', 'bt-bundle-builder-for-wc' ); ?></h3>
+                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Carts with bundle items', 'bt-bundle-builder-for-wc' ); ?></p>
                 </div>
             </div>
             <div class="mmb-chart-container">
@@ -293,8 +293,8 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
         <div class="mmb-chart-card">
             <div class="mmb-chart-header">
                 <div>
-                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Top Bundles', 'mix-match-bundle' ); ?></h3>
-                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Most popular bundles', 'mix-match-bundle' ); ?></p>
+                    <h3 class="mmb-chart-title"><?php echo esc_html__( 'Top Bundles', 'bt-bundle-builder-for-wc' ); ?></h3>
+                    <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Most popular bundles', 'bt-bundle-builder-for-wc' ); ?></p>
                 </div>
             </div>
             <div class="mmb-chart-container">
@@ -308,19 +308,19 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
     <div class="mmb-data-table-wrapper">
         <div class="mmb-chart-header">
             <div>
-                <h3 class="mmb-chart-title"><?php echo esc_html__( 'Recent Activity', 'mix-match-bundle' ); ?></h3>
-                <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Latest coupon usage and orders', 'mix-match-bundle' ); ?></p>
+                <h3 class="mmb-chart-title"><?php echo esc_html__( 'Recent Activity', 'bt-bundle-builder-for-wc' ); ?></h3>
+                <p class="mmb-chart-subtitle"><?php echo esc_html__( 'Latest coupon usage and orders', 'bt-bundle-builder-for-wc' ); ?></p>
             </div>
         </div>
         
         <table class="mmb-data-table">
             <thead>
                 <tr>
-                    <th><?php echo esc_html__( 'Coupon Code', 'mix-match-bundle' ); ?></th>
-                    <th><?php echo esc_html__( 'Created', 'mix-match-bundle' ); ?></th>
-                    <th><?php echo esc_html__( 'Discount', 'mix-match-bundle' ); ?></th>
-                    <th><?php echo esc_html__( 'Usage', 'mix-match-bundle' ); ?></th>
-                    <th><?php echo esc_html__( 'Status', 'mix-match-bundle' ); ?></th>
+                    <th><?php echo esc_html__( 'Coupon Code', 'bt-bundle-builder-for-wc' ); ?></th>
+                    <th><?php echo esc_html__( 'Created', 'bt-bundle-builder-for-wc' ); ?></th>
+                    <th><?php echo esc_html__( 'Discount', 'bt-bundle-builder-for-wc' ); ?></th>
+                    <th><?php echo esc_html__( 'Usage', 'bt-bundle-builder-for-wc' ); ?></th>
+                    <th><?php echo esc_html__( 'Status', 'bt-bundle-builder-for-wc' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -330,7 +330,7 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
                     foreach ( $recent_coupons as $coupon ) :
                         $usage_count = isset( $coupon->usage_count ) ? intval( $coupon->usage_count ) : 0;
                         $status_class = $usage_count > 0 ? 'success' : 'warning';
-                        $status_text = $usage_count > 0 ? __( 'Used', 'mix-match-bundle' ) : __( 'Unused', 'mix-match-bundle' );
+                        $status_text = $usage_count > 0 ? __( 'Used', 'bt-bundle-builder-for-wc' ) : __( 'Unused', 'bt-bundle-builder-for-wc' );
                         ?>
                         <tr>
                             <td><strong><?php echo esc_html( $coupon->coupon_code ); ?></strong></td>
@@ -345,8 +345,8 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
                         <td colspan="5" style="text-align: center; padding: 40px;">
                             <div class="mmb-empty-state">
                                 <div class="mmb-empty-state-icon">📊</div>
-                                <div class="mmb-empty-state-title"><?php echo esc_html__( 'No Data Available', 'mix-match-bundle' ); ?></div>
-                                <div class="mmb-empty-state-text"><?php echo esc_html__( 'Create your first bundle to see analytics here', 'mix-match-bundle' ); ?></div>
+                                <div class="mmb-empty-state-title"><?php echo esc_html__( 'No Data Available', 'bt-bundle-builder-for-wc' ); ?></div>
+                                <div class="mmb-empty-state-text"><?php echo esc_html__( 'Create your first bundle to see analytics here', 'bt-bundle-builder-for-wc' ); ?></div>
                             </div>
                         </td>
                     </tr>
@@ -358,9 +358,9 @@ mmb_debug_log( 'Analytics Data - Bundle Performance: ' . json_encode( $analytics
     <!-- Diagnostics Link -->
     <div style="margin-top: 24px; padding: 16px; background: #fff; border-radius: 12px; text-align: center;">
         <p style="margin: 0; color: #64748b;">
-            <?php echo esc_html__( 'Having issues with analytics?', 'mix-match-bundle' ); ?>
+            <?php echo esc_html__( 'Having issues with analytics?', 'bt-bundle-builder-for-wc' ); ?>
             <a href="<?php echo esc_url( admin_url( 'admin.php?page=mmb-diagnostics' ) ); ?>" style="color: #3b82f6; text-decoration: none; font-weight: 500;">
-                <?php echo esc_html__( 'Run Diagnostics', 'mix-match-bundle' ); ?>
+                <?php echo esc_html__( 'Run Diagnostics', 'bt-bundle-builder-for-wc' ); ?>
             </a>
         </p>
     </div>

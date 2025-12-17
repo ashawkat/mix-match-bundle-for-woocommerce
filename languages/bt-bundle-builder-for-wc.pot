@@ -34,7 +34,7 @@ msgid "%s%% off"
 msgstr ""
 
 #: admin/settings.php:64
-msgid "(Look for \"mix-match-bundle\" log file)"
+msgid "(Look for \"bt-bundle-builder-for-wc\" log file)"
 msgstr ""
 
 #: admin/bundle-editor.php:124
@@ -86,11 +86,11 @@ msgstr ""
 msgid "Allow Quantity Selection (instead of single select per product)"
 msgstr ""
 
-#: mix-match-bundle.php:1276 mix-match-bundle.php:1286
+#: bt-bundle-builder-for-wc.php:1276 bt-bundle-builder-for-wc.php:1286
 msgid "An error occurred while adding products to cart"
 msgstr ""
 
-#: mix-match-bundle.php:307
+#: bt-bundle-builder-for-wc.php:307
 msgid "Analytics"
 msgstr ""
 
@@ -106,7 +106,7 @@ msgstr ""
 msgid "Apply Filter"
 msgstr ""
 
-#: mix-match-bundle.php:306
+#: bt-bundle-builder-for-wc.php:306
 msgid "Bundle Analytics"
 msgstr ""
 
@@ -114,7 +114,7 @@ msgstr ""
 msgid "Bundle Creation"
 msgstr ""
 
-#: mix-match-bundle.php:452
+#: bt-bundle-builder-for-wc.php:452
 msgid "Bundle Discount"
 msgstr ""
 
@@ -130,11 +130,11 @@ msgstr ""
 msgid "Bundle Table"
 msgstr ""
 
-#: mix-match-bundle.php:1018
+#: bt-bundle-builder-for-wc.php:1018
 msgid "Bundle added to session"
 msgstr ""
 
-#: mix-match-bundle.php:1466
+#: bt-bundle-builder-for-wc.php:1466
 #, php-format
 msgid "Bundle coupon cleanup completed. Deleted: %1$d, Kept: %2$d"
 msgstr ""
@@ -143,7 +143,7 @@ msgstr ""
 msgid "Bundle creation and updates"
 msgstr ""
 
-#: mix-match-bundle.php:710
+#: bt-bundle-builder-for-wc.php:710
 msgid "Bundle deleted"
 msgstr ""
 
@@ -151,7 +151,7 @@ msgstr ""
 msgid "Bundle description..."
 msgstr ""
 
-#: mix-match-bundle.php:745
+#: bt-bundle-builder-for-wc.php:745
 msgid "Bundle not found"
 msgstr ""
 
@@ -238,11 +238,11 @@ msgstr ""
 msgid "Created"
 msgstr ""
 
-#: mix-match-bundle.php:2054 admin/analytics-dashboard.php:129
+#: bt-bundle-builder-for-wc.php:2054 admin/analytics-dashboard.php:129
 msgid "Custom Range"
 msgstr ""
 
-#: mix-match-bundle.php:2049
+#: bt-bundle-builder-for-wc.php:2049
 #, php-format
 msgid "Custom: %1$s to %2$s"
 msgstr ""
@@ -259,7 +259,7 @@ msgstr ""
 msgid "Database Status"
 msgstr ""
 
-#: mix-match-bundle.php:135
+#: bt-bundle-builder-for-wc.php:135
 msgid "Database schema verified successfully."
 msgstr ""
 
@@ -267,7 +267,7 @@ msgstr ""
 msgid "Database table created successfully!"
 msgstr ""
 
-#: mix-match-bundle.php:133
+#: bt-bundle-builder-for-wc.php:133
 msgid ""
 "Database update encountered an issue. Please review the debug log for "
 "details."
@@ -297,7 +297,7 @@ msgstr ""
 msgid "Design Customization"
 msgstr ""
 
-#: mix-match-bundle.php:316 mix-match-bundle.php:317
+#: bt-bundle-builder-for-wc.php:316 bt-bundle-builder-for-wc.php:317
 msgid "Diagnostics"
 msgstr ""
 
@@ -338,16 +338,16 @@ msgstr ""
 msgid "Error conditions and warnings"
 msgstr ""
 
-#: mix-match-bundle.php:1117
+#: bt-bundle-builder-for-wc.php:1117
 msgid "Failed to add any products to cart"
 msgstr ""
 
-#: mix-match-bundle.php:1109
+#: bt-bundle-builder-for-wc.php:1109
 #, php-format
 msgid "Failed to add product %d"
 msgstr ""
 
-#: mix-match-bundle.php:1266
+#: bt-bundle-builder-for-wc.php:1266
 msgid "Failed to add product to cart"
 msgstr ""
 
@@ -356,11 +356,11 @@ msgid ""
 "Failed to create database table. Please check your database permissions."
 msgstr ""
 
-#: mix-match-bundle.php:712
+#: bt-bundle-builder-for-wc.php:712
 msgid "Failed to delete bundle"
 msgstr ""
 
-#: mix-match-bundle.php:673
+#: bt-bundle-builder-for-wc.php:673
 msgid "Failed to save bundle"
 msgstr ""
 
@@ -388,51 +388,51 @@ msgstr ""
 msgid "Increase quantity"
 msgstr ""
 
-#: mix-match-bundle.php:2358
+#: bt-bundle-builder-for-wc.php:2358
 msgid "Install WP Statistics plugin for detailed analytics"
 msgstr ""
 
-#: mix-match-bundle.php:192
+#: bt-bundle-builder-for-wc.php:192
 msgid "Install WooCommerce"
 msgstr ""
 
-#: mix-match-bundle.php:705
+#: bt-bundle-builder-for-wc.php:705
 msgid "Invalid bundle ID"
 msgstr ""
 
-#: mix-match-bundle.php:738 mix-match-bundle.php:933
+#: bt-bundle-builder-for-wc.php:738 bt-bundle-builder-for-wc.php:933
 msgid "Invalid data"
 msgstr ""
 
-#: mix-match-bundle.php:1076 mix-match-bundle.php:1220
+#: bt-bundle-builder-for-wc.php:1076 bt-bundle-builder-for-wc.php:1220
 msgid "Invalid product ID"
 msgstr ""
 
-#: mix-match-bundle.php:1050
+#: bt-bundle-builder-for-wc.php:1050
 msgid "Invalid products data"
 msgstr ""
 
-#: mix-match-bundle.php:2031 admin/analytics-dashboard.php:123
+#: bt-bundle-builder-for-wc.php:2031 admin/analytics-dashboard.php:123
 msgid "Last 30 Days"
 msgstr ""
 
-#: mix-match-bundle.php:2029 admin/analytics-dashboard.php:122
+#: bt-bundle-builder-for-wc.php:2029 admin/analytics-dashboard.php:122
 msgid "Last 7 Days"
 msgstr ""
 
-#: mix-match-bundle.php:2033 admin/analytics-dashboard.php:124
+#: bt-bundle-builder-for-wc.php:2033 admin/analytics-dashboard.php:124
 msgid "Last 90 Days"
 msgstr ""
 
-#: mix-match-bundle.php:2037 admin/analytics-dashboard.php:126
+#: bt-bundle-builder-for-wc.php:2037 admin/analytics-dashboard.php:126
 msgid "Last Month"
 msgstr ""
 
-#: mix-match-bundle.php:2041
+#: bt-bundle-builder-for-wc.php:2041
 msgid "Last Quarter"
 msgstr ""
 
-#: mix-match-bundle.php:2045
+#: bt-bundle-builder-for-wc.php:2045
 msgid "Last Year"
 msgstr ""
 
@@ -461,7 +461,7 @@ msgstr ""
 msgid "Missing functions:"
 msgstr ""
 
-#: mix-match-bundle.php:295
+#: bt-bundle-builder-for-wc.php:295
 msgid "Mix & Match"
 msgstr ""
 
@@ -477,15 +477,15 @@ msgstr ""
 msgid "Mix & Match Bundle Settings"
 msgstr ""
 
-#: mix-match-bundle.php:189
+#: bt-bundle-builder-for-wc.php:189
 msgid "Mix & Match Bundle for WooCommerce"
 msgstr ""
 
-#: mix-match-bundle.php:130
+#: bt-bundle-builder-for-wc.php:130
 msgid "Mix & Match Bundle:"
 msgstr ""
 
-#: mix-match-bundle.php:294 admin/bundle-editor.php:36
+#: bt-bundle-builder-for-wc.php:294 admin/bundle-editor.php:36
 msgid "Mix & Match Bundles"
 msgstr ""
 
@@ -537,7 +537,7 @@ msgstr ""
 msgid "Primary Color"
 msgstr ""
 
-#: mix-match-bundle.php:1086 mix-match-bundle.php:1230
+#: bt-bundle-builder-for-wc.php:1086 bt-bundle-builder-for-wc.php:1230
 #, php-format
 msgid "Product cannot be purchased: %s"
 msgstr ""
@@ -647,11 +647,11 @@ msgstr ""
 msgid "Set the maximum quantity customers can select per product (default: 10)"
 msgstr ""
 
-#: mix-match-bundle.php:287 mix-match-bundle.php:326 mix-match-bundle.php:327
+#: bt-bundle-builder-for-wc.php:287 bt-bundle-builder-for-wc.php:326 bt-bundle-builder-for-wc.php:327
 msgid "Settings"
 msgstr ""
 
-#: mix-match-bundle.php:618
+#: bt-bundle-builder-for-wc.php:618
 msgid "Settings saved successfully!"
 msgstr ""
 
@@ -719,15 +719,15 @@ msgid ""
 "installations."
 msgstr ""
 
-#: mix-match-bundle.php:2035 admin/analytics-dashboard.php:125
+#: bt-bundle-builder-for-wc.php:2035 admin/analytics-dashboard.php:125
 msgid "This Month"
 msgstr ""
 
-#: mix-match-bundle.php:2039 admin/analytics-dashboard.php:127
+#: bt-bundle-builder-for-wc.php:2039 admin/analytics-dashboard.php:127
 msgid "This Quarter"
 msgstr ""
 
-#: mix-match-bundle.php:2043 admin/analytics-dashboard.php:128
+#: bt-bundle-builder-for-wc.php:2043 admin/analytics-dashboard.php:128
 msgid "This Year"
 msgstr ""
 
@@ -782,12 +782,12 @@ msgstr ""
 msgid "Total Revenue"
 msgstr ""
 
-#: mix-match-bundle.php:660 mix-match-bundle.php:682 mix-match-bundle.php:699
-#: mix-match-bundle.php:804 mix-match-bundle.php:851
+#: bt-bundle-builder-for-wc.php:660 bt-bundle-builder-for-wc.php:682 bt-bundle-builder-for-wc.php:699
+#: bt-bundle-builder-for-wc.php:804 bt-bundle-builder-for-wc.php:851
 msgid "Unauthorized"
 msgstr ""
 
-#: mix-match-bundle.php:2474
+#: bt-bundle-builder-for-wc.php:2474
 msgid "Unnamed Bundle"
 msgstr ""
 
@@ -845,7 +845,7 @@ msgstr ""
 msgid "WooCommerce logger not available"
 msgstr ""
 
-#: mix-match-bundle.php:1038
+#: bt-bundle-builder-for-wc.php:1038
 msgid "WooCommerce not available"
 msgstr ""
 
@@ -901,7 +901,7 @@ msgstr ""
 msgid "products"
 msgstr ""
 
-#: mix-match-bundle.php:190
+#: bt-bundle-builder-for-wc.php:190
 msgid "requires WooCommerce to be installed and active."
 msgstr ""
 
