@@ -65,13 +65,13 @@ Contributors are recognized in:
 
 Want to see your name here? We'd love your help!
 
-- **GitHub**: [https://github.com/betatech/mix-match-bundle](https://github.com/betatech/mix-match-bundle)
-- **Issues**: [https://github.com/betatech/mix-match-bundle/issues](https://github.com/betatech/mix-match-bundle/issues)
-- **Discussions**: [https://github.com/betatech/mix-match-bundle/discussions](https://github.com/betatech/mix-match-bundle/discussions)
+- **GitHub**: [https://github.com/ashawkat/mix-match-bundle-for-woocommerce](https://github.com/ashawkat/mix-match-bundle-for-woocommerce)
+- **Issues**: [https://github.com/ashawkat/mix-match-bundle-for-woocommerce/issues](https://github.com/ashawkat/mix-match-bundle-for-woocommerce/issues)
+- **Discussions**: [https://github.com/ashawkat/mix-match-bundle-for-woocommerce/discussions](https://github.com/ashawkat/mix-match-bundle-for-woocommerce/discussions)
 
 ---
 
-**Thank you for making Mix & Match Bundle better for everyone!** ❤️
+**Thank you for making Bundle Builder better for everyone!** ❤️
 
 *The Betatech Team*
 

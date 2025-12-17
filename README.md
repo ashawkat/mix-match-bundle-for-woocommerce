@@ -1,6 +1,6 @@
 # 🎁 Bundle Builder for WooCommerce
 
-[![Version](https://img.shields.io/badge/Version-1.0.2-blue.svg)](https://github.com/betatech/mix-match-bundle/releases)
+[![Version](https://img.shields.io/badge/Version-1.0.2-blue.svg)](https://github.com/ashawkat/mix-match-bundle-for-woocommerce/releases)
 [![WordPress Plugin Version](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)](https://wordpress.org/)
 [![WooCommerce Version](https://img.shields.io/badge/WooCommerce-7.0%2B-purple.svg)](https://woocommerce.com/)
 [![PHP Version](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg)](https://www.php.net/)
@@ -397,7 +397,7 @@ apply_filters( 'mmb_cart_behavior', $behavior, $bundle_id );
 
 ```bash
 # Clone repository
-git clone https://github.com/betatech/mix-match-bundle.git
+git clone https://github.com/ashawkat/mix-match-bundle-for-woocommerce.git
 
 # Navigate to plugin directory
 cd mix-match-bundle
@@ -608,7 +608,7 @@ Full license: [http://www.gnu.org/licenses/gpl-2.0.html](http://www.gnu.org/lice
 
 <!-- - **Plugin Page:** [WordPress.org](https://wordpress.org/plugins/mix-match-bundle/) -->
 - **Website:** [https://betatech.co](https://betatech.co)
-- **GitHub:** [https://github.com/ashawkat/mix-match-bundle-for-woocommerce](https://github.com/betatech/mix-match-bundle)
+- **GitHub:** [https://github.com/ashawkat/mix-match-bundle-for-woocommerce](https://github.com/ashawkat/mix-match-bundle-for-woocommerce)
 - **Demo:** [https://demo.betatech.co/docs/mix-match-bundle](https://betatech.co/docs/mix-match-bundle)
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 - **Translations:** [languages/README.md](languages/README.md)

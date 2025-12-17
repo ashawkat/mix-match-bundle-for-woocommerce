@@ -355,7 +355,7 @@ We love hearing from our users! If you have ideas for new features, please share
 = Report Bugs =
 
 Found a bug? Please report it via:
-* **GitHub Issues:** [https://github.com/betatech/bt-bundle-builder-for-wc](https://github.com/betatech/bt-bundle-builder-for-wc)
+* **GitHub Issues:** [https://github.com/ashawkat/mix-match-bundle-for-woocommerce](https://github.com/ashawkat/mix-match-bundle-for-woocommerce)
 * **Support Forum:** [https://betatech.co/support](https://betatech.co/support)
 
 == Privacy Policy ==
@@ -372,7 +372,7 @@ All bundle and product data is stored locally in your WordPress database.
 == Contributing ==
 
 We welcome contributions! The plugin is developed on GitHub:
-**Repository:** [https://github.com/betatech/bt-bundle-builder-for-wc](https://github.com/betatech/bt-bundle-builder-for-wc)
+**Repository:** [https://github.com/ashawkat/mix-match-bundle-for-woocommerce](https://github.com/ashawkat/mix-match-bundle-for-woocommerce)
 
 = How to Contribute =
 * Submit bug reports and feature requests on GitHub Issues
